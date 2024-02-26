@@ -17,7 +17,7 @@ as long as any processes still have the file open. This allows client programs t
 latest available data, with no danger of having the data in the file drop out of existence while a client is reading the content.
 
 Finally, the `www/index.html` and `www/anim-index.html` files are two versions of a web page interface.
-Both programs are similar. The `index.html` file is basically a predecessor to the `index-anim.html` file.  
+Both programs are similar. The `index.html` file is basically a predecessor to the `index.html` file.  
 
 Both programs open a connection to the websocket server and wait for data to arrive asynchronously over the
 web socket. Upon arrival of the data packets, they update a client-side HTML5-Canvas based graph created using `Chartjs`.
