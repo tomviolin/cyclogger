@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<!-- vim:tabstop=2:softtabstop=2:shiftwidth=2:expandtab
+-->
+<meta charset="utf-8">
+<html lang="en">
+<head>
+  <title>bike monitor</title>
+  <style type="text/css">
+  canvas { height: 540px; width: 100%}
+  </style>
+</head>
+<body>
+
+<div>
+  <canvas id="myChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+  const NVALUES=100; // number of data points shown on screen
+  const ctx = document.getElementById('myChart');
+
+  let Speeds;
+  let Labels;
+  let Dists;
+  let Xaxis;
+  let Datapts;
+  let K_XMIN = 0.0;
+  function initdata(){
+    Speeds = Array(NVALUES);
+    Labels = Array(NVALUES);
+    Dists  = Array(NVALUES);
+    Xaxis = Array(NVALUES);
+    Datapts = []
+    for (var i = 0; i < 100;++i) {
+      Xaxis[i]=i;
+      Datapts.push({x:Xaxis[i],y:Speeds[i]});
+    }
+    lastepochdate = -1;
+  }
+
+  initdata();
+
+  const our_chart = new Chart(ctx, {
+    type: 'scatter',
+    font: {size: 25},
+    animation: false,
+    data: {
+      labels: Labels,
+      datasets: [{
+        label: 'speed (mph)',
+        pointRadius: 0,
+        cubicInterpolationMode: 'monotone',
+        font: {size:25},
+        fill: {value:0},
+        data: Speeds,
+        borderWidth: 5,
+        showLine: true
+      }]
+    },
+    options: {
+      plugins: {legend: {display: false,position: 'right', labels: {font:{size:20}, pointStyleWidth: 10, boxHeight: 8, pointStyle: 'circle',usePointStyle:true }}},
+      animation: false,
+      scales: {
+        x:{
+          //bounds: 'data',
+          grid: {
+            color:'#000000',
+            lineWidth: 2
+          },
+          ticks: {font: {size:25}},
+          afterTickToLabelConversion: (axis) => {
+            var axtics = [];
+            for (var i = 0; i<Labels.length; ++i) {
+              if (Labels[i] !== undefined && Labels[i] != '') {
+                var tik = {
+                  value: Xaxis[i],
+                  label: Labels[i],
+                  color: '#000000'
+                };
+                //console.log("==tik==");
+                //console.log(tik);
+                //console.log("==tik==");
+                axtics.push(tik);
+              }
+              axis.ticks = axtics;
+            }
+            //console.log('ticks set');
+          }
+        },
+        y:{
+          beginAtZero: true, min:0,max:40,
+          afterBuildTicks: (axis) => [0,5,10,15,20,25,30,35,40].map(v => ({value:v})),
+          grid: {color:'blue', lineWidth:2},
+          ticks: { 
+            callback: (x) => { return x+' mph'},
+            font: {size: 25 }
+          }
+        }
+      }
+    }
+  });
+
+let inq = [];
+
+function dothedew(strdata) {
+  if (typeof strdata != 'undefined') {
+    //console.log('incoming data!!');
+    data = JSON.parse(strdata);
+    //console.log(data);
+    if (parseFloat(Dists[NVALUES-1]) != -1 && parseFloat(Dists[NVALUES-1]) > parseFloat(data.distance)) {
+      // ** clearing system **
+      initdata();
+      console.log("*** clearing system ***");
+    }
+    // === SPEED ===
+    Speeds.shift();
+    Speeds.length = NVALUES;
+    if (data.speed !== undefined) {
+      Speeds[NVALUES-1] = data.speed;
+    }
+    // === DISTANCE ===
+    Dists.shift();
+    Dists.length = NVALUES;
+    if (data.distance !== undefined) {
+      Dists[NVALUES-1] = parseFloat(data.distance);
+    }
+    // === LABELS ===
+    Labels.shift();
+    Labels.length = NVALUES;
+    Labels[NVALUES-1] = '';
+    
+    // === Xaxis ===
+    Xaxis.shift()
+    Xaxis.length = NVALUES;
+    Xaxis[NVALUES-1] = Xaxis[NVALUES-2]+1;
+    if (Dists[NVALUES-2] !== undefined && Dists[NVALUES-1] !== undefined) {
+      //console.log("DISTS: "+Dists[NVALUES-1]+" >? "+Dists[NVALUES-2]);
+      if (Math.floor(parseFloat(Dists[NVALUES-1])*10) > Math.floor(parseFloat(Dists[NVALUES-2])*10)) {
+        Labels[NVALUES-1] = (Math.floor(parseFloat(Dists[NVALUES-1])*10)/10)+"";
+      } else if (parseFloat(Dists[NVALUES-1]) < parseFloat(Dists[NVALUES-2])) {
+        // re-init system
+        initdata();
+      }
+    }
+    Datapts.shift()
+    Datapts.length = NVALUES;
+    Datapts[NVALUES-1] = { x:Xaxis[NVALUES-1], y:Speeds[NVALUES-1], label:Labels[NVALUES-1]};
+    our_chart.data.datasets[0].data = Datapts;
+    our_chart.labels = Labels;
+    our_chart.options.scales.x.min = Xaxis[0];
+    our_chart.options.scales.x.max = Xaxis[NVALUES-1];
+    our_chart.update();
+    //console.log("Dists = ");
+    //console.log(Dists);
+    lastdt = parseFloat(data.dt);
+    console.log("calling animatex...");
+    //setTimeout(animatex,0);
+  }
+}
+
+function animatex() {
+  console.log("animatex!!");
+  // move the x axis to the left 1 unit
+  var fps = 30;
+  var numframes = Math.floor(lastdt*fps);
+  var cd = numframes-1;
+  anim = ()=>{
+    if (cd < 0) return;
+    var incr = (numframes-cd)/numframes;
+    console.log("INTR: "+incr);
+    our_chart.options.scales.x.min = Xaxis[0]+incr;
+    our_chart.options.scales.x.max = Xaxis[NVALUES-2]+incr;
+    our_chart.update();
+    cd--;
+    if (cd >=0) setTimeout(anim, 1000/fps);
+  }
+  anim();
+}
+
+
+// ************* WEBSOCKET CODE *************
+
+let socket = new WebSocket("ws://192.168.1.68:6878/");
+
+socket.onopen = function(e) {
+    console.log("[open] Connection established");
+    console.log("Sending to server");
+    socket.send("reqdata");
+};
+
+socket.onmessage = function(event) {
+    console.log(`[message] Data received from server: ${event.data}`);
+    dothedew(event.data);
+};
+
+socket.onclose = function(event) {
+    if (event.wasClean) {
+        console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+    } else {
+        console.log('[close] Connection died');
+    }
+};
+
+socket.onerror = function(error) {
+    console.log("[error]");
+};
+</script>
+</body>
+</html>
+

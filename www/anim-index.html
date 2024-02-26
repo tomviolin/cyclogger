@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<!-- vim:tabstop=2:softtabstop=2:shiftwidth=2:expandtab
+-->
+<meta charset="utf-8">
+<html lang="en">
+<head>
+  <title>bike monitor</title>
+  <style type="text/css">
+  canvas { height: 540px; width: 100%}
+  </style>
+</head>
+<body>
+
+<div>
+  <canvas id="myChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+  const NVALUES=100; // number of data points shown on screen
+  const ctx = document.getElementById('myChart');
+
+  let anim_running = false;
+  let keep_anim_running = false;
+  let Speeds;
+  let Labels;
+  let Dists;
+  let Xaxis;
+  let Datapts;
+  let K_XMIN = 0.0;
+  function initdata(){
+    anim_running = false;
+    keep_anim_running = false;
+    Speeds = Array(NVALUES);
+    Labels = Array(NVALUES);
+    Dists  = Array(NVALUES);
+    Xaxis = Array(NVALUES);
+    Datapts = []
+    for (var i = 0; i < 100;++i) {
+      Xaxis[i]=i;
+      Datapts.push({x:Xaxis[i],y:Speeds[i]});
+    }
+    lastepochdate = -1;
+    K_XMIN = 0.0;
+  }
+
+  initdata();
+
+  const our_chart = new Chart(ctx, {
+    type: 'scatter',
+    font: {size: 25},
+    animation: false,
+    data: {
+      labels: Labels,
+      datasets: [{
+        label: 'speed (mph)',
+        pointRadius: 1,
+        cubicInterpolationMode: 'monotone',
+        font: {size:25},
+        fill: {value:0},
+        data: Speeds,
+        borderWidth: 2,
+        showLine: true
+      }]
+    },
+    options: {
+      plugins: {legend: {display: false,position: 'right', labels: {font:{size:20}, pointStyleWidth: 10, boxHeight: 8, pointStyle: 'circle',usePointStyle:true }}},
+      animation: false,
+      scales: {
+        x:{
+          //bounds: 'data',
+          grid: {
+            color:'#000000',
+            lineWidth: 2
+          },
+          ticks: {font: {size:25}},
+          afterTickToLabelConversion: (axis) => {
+            var axtics = [];
+            var xmax=axis.max;
+            var xmin=axis.min;
+            for (var i = 0; i<Dists.length-3; ++i) {
+              if (typeof Dists[i] !== 'undefined' && typeof Dists[i+1] !== 'undefined') {
+                if (Math.floor(Dists[i+1]*10.0) > Math.floor(Dists[i]*10.0)) {
+                  // d0=25.65  v0=89
+                  // d1=25.71  v1=90  dt = 25.70  dt-d0 / d1-d0
+                  dist0=Dists[i];
+                  dist1=Dists[i+1];
+                  distt=Math.floor(Dists[i+1]*10)/10
+                  frac = (distt - dist0) / (dist1 - dist0);
+                  var lbl="";
+                  if (i < NVALUES-4) lbl=distt+"";
+                  var tik = {
+                    value: Xaxis[i]+frac,
+                    label: lbl,
+                    align: 'left'
+                  };
+                  //console.log("==tik==");
+                  //console.log(tik);
+                  //console.log("==tik==");
+                  axtics.push(tik);
+                }
+                
+              } else if (typeof Dists[i] === 'undefined' && typeof Dists[i+1] !== 'undefined') {
+                //console.log("start me up!");
+                // beginning mile marker 0
+                var tik= {
+                  value: Xaxis[i+1],
+                  label: "start",
+                  align: 'left'
+                };
+                axtics.push(tik);
+              }
+            }
+            axis.ticks = axtics;
+              axis.min=xmin;
+              axis.max=xmax;
+            
+            //console.log('ticks set');
+          }
+        },
+        y:{
+          beginAtZero: true, min:0,max:40,
+          afterBuildTicks: (axis) => [0,5,10,15,20,25,30,35,40].map(v => ({value:v})),
+          grid: {color:'blue', lineWidth:2},
+          ticks: { 
+            callback: (x) => { return x+' mph'},
+            font: {size: 25 }
+          }
+        }
+      }
+    }
+  });
+
+let inq = [];
+
+function dothedew(strdata) {
+  if (typeof strdata != 'undefined') {
+    //console.log('incoming data!!');
+    data = JSON.parse(strdata);
+    //console.log(data);
+    if (parseFloat(Dists[NVALUES-1]) != -1 && parseFloat(Dists[NVALUES-1]) > parseFloat(data.distance)) {
+      // ** clearing system **
+      initdata();
+      console.log("*** clearing system ***");
+    }
+    // === SPEED ===
+    Speeds.shift();
+    Speeds.length = NVALUES;
+    if (data.speed !== undefined) {
+      Speeds[NVALUES-1] = data.speed;
+    }
+    // === DISTANCE ===
+    Dists.shift();
+    Dists.length = NVALUES;
+    if (data.distance !== undefined) {
+      Dists[NVALUES-1] = parseFloat(data.distance);
+    }
+    // === LABELS ===
+    Labels.shift();
+    Labels.length = NVALUES;
+    Labels[NVALUES-1] = '';
+    
+    // === Xaxis ===
+    Xaxis.shift()
+    Xaxis.length = NVALUES;
+    Xaxis[NVALUES-1] = Xaxis[NVALUES-2]+1;
+    if (Dists[NVALUES-2] !== undefined && Dists[NVALUES-1] !== undefined) {
+      //console.log("DISTS: "+Dists[NVALUES-1]+" >? "+Dists[NVALUES-2]);
+      if (Math.floor(parseFloat(Dists[NVALUES-1])*10) > Math.floor(parseFloat(Dists[NVALUES-2])*10)) {
+        //Labels[NVALUES-1] = (Math.floor(parseFloat(Dists[NVALUES-1])*10)/10)+"";
+      } else if (parseFloat(Dists[NVALUES-1]) < parseFloat(Dists[NVALUES-2])) {
+        // re-init system
+        initdata();
+      }
+    }
+    Datapts.shift()
+    Datapts.length = NVALUES;
+    Datapts[NVALUES-1] = { x:Xaxis[NVALUES-1], y:Speeds[NVALUES-1], label:Labels[NVALUES-1]};
+    our_chart.data.datasets[0].data = Datapts;
+    our_chart.labels = Labels;
+    
+    //our_chart.options.scales.x.min = Xaxis[0];
+    //our_chart.options.scales.x.max = Xaxis[NVALUES-1];
+    //our_chart.update();
+    if (!anim_running) {
+      //console.log("calling animatex...");
+      keep_anim_running = true;
+      setTimeout(animatex,0);
+    }
+  }
+}
+
+function animatex() {
+  if (!keep_anim_running) {
+    anim_running = false;
+    return;
+  }
+  anim_running = true;
+  //console.log("animatex!!");
+  chart_range = NVALUES-1;
+  curmin = Xaxis[0];
+  K_XMIN = K_XMIN*0.9 + curmin*0.1;
+  our_chart.options.scales.x.min = K_XMIN+2;
+  our_chart.options.scales.x.max = K_XMIN+chart_range;
+  our_chart.update();
+  if (keep_anim_running) {
+    setTimeout(animatex, 1000/20);
+  }else{
+    anim_running = false;
+  }
+}
+
+// ************* WEBSOCKET CODE *************
+
+let socket = new WebSocket("ws://192.168.1.68:6878/");
+
+socket.onopen = function(e) {
+    console.log("[open] Connection established");
+    console.log("Sending to server");
+    socket.send("reqdata");
+};
+
+socket.onmessage = function(event) {
+    console.log(`[message] Data received from server: ${event.data}`);
+    dothedew(event.data);
+};
+
+socket.onclose = function(event) {
+    if (event.wasClean) {
+        console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+    } else {
+        console.log('[close] Connection died');
+    }
+};
+
+socket.onerror = function(error) {
+    console.log("[error]");
+};
+</script>
+</body>
+</html>
+

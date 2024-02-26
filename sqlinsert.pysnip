@@ -1,0 +1,9 @@
+            """
+            sql = '''INSERT INTO cycles ( `epochtime`, `cycletime`, `dt`, `speed_mph`, `distance`) 
+                VALUES (?,?,?,?,?);'''
+            con = sqlite3.connect("cycle.db")
+            cur = con.cursor()
+            cur.execute(sql, (thistime, tf('%Y-%m-%d %H:%M:%S',thistime), thistime-lasttime, speed, distance))
+            con.commit()
+            con.close()
+            """
