@@ -4,7 +4,7 @@ a rare earth magnet duct-taped to the reflector on a stationary bike I use for e
 The Hall sensor allows a program on the Pi (`cyclogger.py`) to record the timing of the pulses to calculate
 speed and etc.  Speeds are estimated assuming a 26-inch wheel.
 
-Timings and esimated speed are recorded to daily csv files as well as a sqlite3 database.
+Timings and estimated speed are recorded to daily csv files as well as a sqlite3 database.
 There is also code in there for a rudimentary ncurses display of speed vs. time. It is now disabled in favor
 of a web interface which is much easier to read.
 
