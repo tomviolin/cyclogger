@@ -175,11 +175,11 @@ def main(stdscr):
             #else:
             #    kdt += kddt
 
-            kdt=kdt*0.40+dt*0.60
+            kdt=kdt*0.10+dt*0.90
             # calculate speed
             speed = 26*3.14159*60*60/12/5280/kdt
             if ospdraw is None:
-                ospdraw = [speed] * 3
+                ospdraw = [speed] * 4
             ospdraw = [speed] + ospdraw[:-1]
             speed = st.median(ospdraw)
             
