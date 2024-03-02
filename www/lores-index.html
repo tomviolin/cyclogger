@@ -22,8 +22,6 @@
   const NVALUES=100; // number of data points shown on screen
   const ctx = document.getElementById('myChart');
 
-  let anim_running = false;
-  let keep_anim_running = false;
   let Speeds;
   let Labels;
   let Dists;
@@ -31,19 +29,16 @@
   let Datapts;
   let K_XMIN = 0.0;
   function initdata(){
-    anim_running = false;
-    keep_anim_running = false;
     Speeds = Array(NVALUES);
     Labels = Array(NVALUES);
     Dists  = Array(NVALUES);
     Xaxis = Array(NVALUES);
     Datapts = []
-    for (var i = 0; i < NVALUES;++i) {
+    for (var i = 0; i < 100;++i) {
       Xaxis[i]=i;
       Datapts.push({x:Xaxis[i],y:Speeds[i]});
     }
     lastepochdate = -1;
-    K_XMIN = 0.0;
   }
 
   initdata();
@@ -56,7 +51,7 @@
       labels: Labels,
       datasets: [{
         label: 'speed (mph)',
-        pointRadius: 2,
+        pointRadius: 0,
         cubicInterpolationMode: 'monotone',
         font: {size:25},
         fill: {value:0},
@@ -68,11 +63,6 @@
     options: {
       plugins: {legend: {display: false,position: 'right', labels: {font:{size:20}, pointStyleWidth: 10, boxHeight: 8, pointStyle: 'circle',usePointStyle:true }}},
       animation: false,
-      layout: {
-        padding: {
-          right: 60
-        }
-      },
       scales: {
         x:{
           //bounds: 'data',
@@ -80,53 +70,23 @@
             color:'#000000',
             lineWidth: 2
           },
-          ticks: {
-            font: {size:25},
-            callback: (x) => { return x+' mph'}
-          },
+          ticks: {font: {size:25}},
           afterTickToLabelConversion: (axis) => {
             var axtics = [];
-            var xmax=axis.max;
-            var xmin=axis.min;
-            for (var i = 0; i<Dists.length-3; ++i) {
-              if (typeof Dists[i] !== 'undefined' && typeof Dists[i+1] !== 'undefined') {
-                if (Math.floor(Dists[i+1]*10.0) > Math.floor(Dists[i]*10.0)) {
-                  // d0=25.65  v0=89
-                  // d1=25.71  v1=90  dt = 25.70  dt-d0 / d1-d0
-                  dist0=Dists[i];
-                  dist1=Dists[i+1];
-                  distt=Math.floor(Dists[i+1]*10)/10
-                  frac = (distt - dist0) / (dist1 - dist0);
-                  var lbl="";
-                  if (i < NVALUES-4) lbl=distt+"";
-                  var tik = {
-                    value: Xaxis[i]+frac,
-                    label: lbl,
-                    align: 'left'
-                  };
-                  //console.log("==tik==");
-                  //console.log(tik);
-                  //console.log("==tik==");
-                  axtics.push(tik);
-                }
+            for (var i = 0; i<Labels.length; ++i) {
+              if (Labels[i] !== undefined && Labels[i] != '') {
+                var tik = {
+                  value: Xaxis[i],
+                  label: Labels[i],
+                  color: '#000000'
+                };
+                //console.log("==tik==");
+                //console.log(tik);
+                //console.log("==tik==");
+                axtics.push(tik);
               }
-              /*  
-              } else if (typeof Dists[i] === 'undefined' && typeof Dists[i+1] !== 'undefined' && i > NVALUES-5) {
-                //console.log("start me up!");
-                // beginning mile marker 0
-                if (parseFloat(Dists[i+1]) < 26.0/12/5280) {
-                  var tik= {
-                    value: Xaxis[i],
-                    label: "start"
-                  };
-                  axtics.push(tik);
-                }
-              } */
+              axis.ticks = axtics;
             }
-            axis.ticks = axtics;
-            axis.min=xmin;
-            axis.max=xmax;
-            
             //console.log('ticks set');
           }
         },
@@ -179,7 +139,7 @@ function dothedew(strdata) {
     if (Dists[NVALUES-2] !== undefined && Dists[NVALUES-1] !== undefined) {
       //console.log("DISTS: "+Dists[NVALUES-1]+" >? "+Dists[NVALUES-2]);
       if (Math.floor(parseFloat(Dists[NVALUES-1])*10) > Math.floor(parseFloat(Dists[NVALUES-2])*10)) {
-        //Labels[NVALUES-1] = (Math.floor(parseFloat(Dists[NVALUES-1])*10)/10)+"";
+        Labels[NVALUES-1] = (Math.floor(parseFloat(Dists[NVALUES-1])*10)/10)+"";
       } else if (parseFloat(Dists[NVALUES-1]) < parseFloat(Dists[NVALUES-2])) {
         // re-init system
         initdata();
@@ -190,37 +150,36 @@ function dothedew(strdata) {
     Datapts[NVALUES-1] = { x:Xaxis[NVALUES-1], y:Speeds[NVALUES-1], label:Labels[NVALUES-1]};
     our_chart.data.datasets[0].data = Datapts;
     our_chart.labels = Labels;
-    
-    //our_chart.options.scales.x.min = Xaxis[0];
-    //our_chart.options.scales.x.max = Xaxis[NVALUES-1];
-    //our_chart.update();
-    if (!anim_running) {
-      //console.log("calling animatex...");
-      keep_anim_running = true;
-      setTimeout(animatex,0);
-    }
+    our_chart.options.scales.x.min = Xaxis[0];
+    our_chart.options.scales.x.max = Xaxis[NVALUES-1];
+    our_chart.update();
+    //console.log("Dists = ");
+    //console.log(Dists);
+    lastdt = parseFloat(data.dt);
+    console.log("calling animatex...");
+    //setTimeout(animatex,0);
   }
 }
 
 function animatex() {
-  if (!keep_anim_running) {
-    anim_running = false;
-    return;
+  console.log("animatex!!");
+  // move the x axis to the left 1 unit
+  var fps = 30;
+  var numframes = Math.floor(lastdt*fps);
+  var cd = numframes-1;
+  anim = ()=>{
+    if (cd < 0) return;
+    var incr = (numframes-cd)/numframes;
+    console.log("INTR: "+incr);
+    our_chart.options.scales.x.min = Xaxis[0]+incr;
+    our_chart.options.scales.x.max = Xaxis[NVALUES-2]+incr;
+    our_chart.update();
+    cd--;
+    if (cd >=0) setTimeout(anim, 1000/fps);
   }
-  anim_running = true;
-  //console.log("animatex!!");
-  chart_range = NVALUES-1;
-  curmin = Xaxis[0];
-  K_XMIN = K_XMIN*0.9 + curmin*0.1;
-  our_chart.options.scales.x.min = K_XMIN+2;
-  our_chart.options.scales.x.max = K_XMIN+chart_range;
-  our_chart.update();
-  if (keep_anim_running) {
-    setTimeout(animatex, 1000/20);
-  }else{
-    anim_running = false;
-  }
+  anim();
 }
+
 
 // ************* WEBSOCKET CODE *************
 
