@@ -3,15 +3,10 @@
 import subprocess
 import json
 import pyautogui
+import requests
 
 def cyclestreet():
-    # capture the output of the command
-    output = subprocess.check_output(['ssh', 'cycler', 'cat', '/home/tomh/gpio/latest.json'])
-    # decode the output to a string
-    output = output.decode('utf-8')
-    # print the output
-    #print(output)
-    return json.loads(output)
+    return requests.get('http://localhost:8000/latest.json').json()
 
 def main():
     # initial read
@@ -21,16 +16,14 @@ def main():
     while True:
         data = cyclestreet()
         distance = float(data['distance'])
-        print(f"{distance}-{lastdistance}={distance - lastdistance}")
-        if distance - lastdistance > 0.1/8:
+        if distance - lastdistance > 0.1/10:
+            print(f"{distance}-{lastdistance}={distance - lastdistance}")
             print('up!')
             pyautogui.press('up')
             lastdistance = distance
         elif distance - lastdistance < 0:
             # reset the last distance
             lastdistance = distance
-
-
 
 if __name__ == '__main__':
     main()
