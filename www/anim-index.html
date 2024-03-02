@@ -38,7 +38,7 @@
     Dists  = Array(NVALUES);
     Xaxis = Array(NVALUES);
     Datapts = []
-    for (var i = 0; i < 100;++i) {
+    for (var i = 0; i < NVALUES;++i) {
       Xaxis[i]=i;
       Datapts.push({x:Xaxis[i],y:Speeds[i]});
     }
@@ -56,18 +56,23 @@
       labels: Labels,
       datasets: [{
         label: 'speed (mph)',
-        pointRadius: 1,
+        pointRadius: 2,
         cubicInterpolationMode: 'monotone',
         font: {size:25},
         fill: {value:0},
         data: Speeds,
-        borderWidth: 2,
+        borderWidth: 5,
         showLine: true
       }]
     },
     options: {
       plugins: {legend: {display: false,position: 'right', labels: {font:{size:20}, pointStyleWidth: 10, boxHeight: 8, pointStyle: 'circle',usePointStyle:true }}},
       animation: false,
+      layout: {
+        padding: {
+          right: 60
+        }
+      },
       scales: {
         x:{
           //bounds: 'data',
@@ -75,7 +80,10 @@
             color:'#000000',
             lineWidth: 2
           },
-          ticks: {font: {size:25}},
+          ticks: {
+            font: {size:25},
+            callback: (x) => { return x+' mph'}
+          },
           afterTickToLabelConversion: (axis) => {
             var axtics = [];
             var xmax=axis.max;
@@ -101,21 +109,23 @@
                   //console.log("==tik==");
                   axtics.push(tik);
                 }
-                
-              } else if (typeof Dists[i] === 'undefined' && typeof Dists[i+1] !== 'undefined') {
+              }
+              /*  
+              } else if (typeof Dists[i] === 'undefined' && typeof Dists[i+1] !== 'undefined' && i > NVALUES-5) {
                 //console.log("start me up!");
                 // beginning mile marker 0
-                var tik= {
-                  value: Xaxis[i+1],
-                  label: "start",
-                  align: 'left'
-                };
-                axtics.push(tik);
-              }
+                if (parseFloat(Dists[i+1]) < 26.0/12/5280) {
+                  var tik= {
+                    value: Xaxis[i],
+                    label: "start"
+                  };
+                  axtics.push(tik);
+                }
+              } */
             }
             axis.ticks = axtics;
-              axis.min=xmin;
-              axis.max=xmax;
+            axis.min=xmin;
+            axis.max=xmax;
             
             //console.log('ticks set');
           }

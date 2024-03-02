@@ -5,7 +5,7 @@ cd `dirname $0`
 thiscmd=`basename $0 .sh`
 
 case $thiscmd in
-startserver)
+startserver|restartserver)
 	# make sure any old server processes are dead
 	./stopserver.sh
 
@@ -56,7 +56,7 @@ serverstatus)
 		echo '======== '$S' ========'
 		screen -S $S -X hardcopy /tmp/$USER-$S
 		cat /tmp/$USER-$S
-	done
+	done | more -s
 
 	;;
 

@@ -17,6 +17,7 @@ def writelatest(output):
     os.rename("_latest.json","latest.json")
 
 ts = time.strftime("%Y%m%d")
+ts="20240226"
 f=f"cyclelog-{ts}.csv"
 
 infile = open(f, "r")
