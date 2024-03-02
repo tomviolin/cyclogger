@@ -20,7 +20,11 @@
 <script>
 
   const NVALUES=100; // number of data points shown on screen
+  const MARKERS_PER_MILE = 50;
   const ctx = document.getElementById('myChart');
+
+
+
 
   let anim_running = false;
   let keep_anim_running = false;
@@ -88,42 +92,45 @@
             var axtics = [];
             var xmax=axis.max;
             var xmin=axis.min;
-            for (var i = 0; i<Dists.length-3; ++i) {
+            for (var i = 0; i<Dists.length-1; ++i) {
               if (typeof Dists[i] !== 'undefined' && typeof Dists[i+1] !== 'undefined') {
-                if (Math.floor(Dists[i+1]*10.0) > Math.floor(Dists[i]*10.0)) {
+                if (Math.floor(Dists[i+1]*MARKERS_PER_MILE) > Math.floor(Dists[i]*MARKERS_PER_MILE)) {
                   // d0=25.65  v0=89
                   // d1=25.71  v1=90  dt = 25.70  dt-d0 / d1-d0
                   dist0=Dists[i];
                   dist1=Dists[i+1];
-                  distt=Math.floor(Dists[i+1]*10)/10
+                  distt=Math.floor(Dists[i+1]*MARKERS_PER_MILE)/MARKERS_PER_MILE
                   frac = (distt - dist0) / (dist1 - dist0);
                   var lbl="";
-                  if (i < NVALUES-4) lbl=distt+"";
+                  if (i < NVALUES-1) lbl=distt+"";
                   var tik = {
                     value: Xaxis[i]+frac,
                     label: lbl,
-                    align: 'left'
+                    color: '#ff0000'
                   };
                   //console.log("==tik==");
                   //console.log(tik);
                   //console.log("==tik==");
                   axtics.push(tik);
                 }
-              }
-              /*  
-              } else if (typeof Dists[i] === 'undefined' && typeof Dists[i+1] !== 'undefined' && i > NVALUES-5) {
+              } else if (typeof Dists[i] === 'undefined' && typeof Dists[i+1] !== 'undefined') {
                 //console.log("start me up!");
                 // beginning mile marker 0
-                if (parseFloat(Dists[i+1]) < 26.0/12/5280) {
+                if (true || parseFloat(Dists[i+1]) < 26.0/12/5280) {
                   var tik= {
                     value: Xaxis[i],
                     label: "start"
                   };
                   axtics.push(tik);
                 }
-              } */
+              }
             }
+              axtics.push({
+                value: xmax,
+                label: ''
+              });
             axis.ticks = axtics;
+            
             axis.min=xmin;
             axis.max=xmax;
             
@@ -178,7 +185,7 @@ function dothedew(strdata) {
     Xaxis[NVALUES-1] = Xaxis[NVALUES-2]+1;
     if (Dists[NVALUES-2] !== undefined && Dists[NVALUES-1] !== undefined) {
       //console.log("DISTS: "+Dists[NVALUES-1]+" >? "+Dists[NVALUES-2]);
-      if (Math.floor(parseFloat(Dists[NVALUES-1])*10) > Math.floor(parseFloat(Dists[NVALUES-2])*10)) {
+      if (Math.floor(parseFloat(Dists[NVALUES-1])*MARKERS_PER_MILE) > Math.floor(parseFloat(Dists[NVALUES-2])*MARKERS_PER_MILE)) {
         //Labels[NVALUES-1] = (Math.floor(parseFloat(Dists[NVALUES-1])*10)/10)+"";
       } else if (parseFloat(Dists[NVALUES-1]) < parseFloat(Dists[NVALUES-2])) {
         // re-init system
@@ -209,7 +216,7 @@ function animatex() {
   }
   anim_running = true;
   //console.log("animatex!!");
-  chart_range = NVALUES-1;
+  chart_range = NVALUES;
   curmin = Xaxis[0];
   K_XMIN = K_XMIN*0.9 + curmin*0.1;
   our_chart.options.scales.x.min = K_XMIN+2;
