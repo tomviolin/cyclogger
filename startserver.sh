@@ -10,16 +10,16 @@ startserver|restartserver)
 	./stopserver.sh
 
 	# start web server
-	echo -n "starting web server..."
-	cd www
-	screen -d -m python3 -m http.server --cgi
-	cd ..
-	echo "OK"
+	#echo -n "starting web server..."
+	#cd www
+	#screen -d -m python3 -m http.server --cgi
+	#cd ..
+	#echo "OK"
 
 	# start web socket server
-	echo -n "starting websocketserver..."
-	screen -d -m ./websocketserver.py
-	echo "OK"
+	#echo -n "starting websocketserver..."
+	#screen -d -m ./websocketserver.py
+	#echo "OK"
 
 	# start cyclogger
 	echo -n "starting gocycle.sh..."
@@ -27,6 +27,11 @@ startserver|restartserver)
 	echo "OK"
 
 	;;
+
+startserverdirect)
+	./gocycle.sh
+	;;
+
 
 stopserver)
 	# stop cyclogger
@@ -53,9 +58,14 @@ serverstatus)
 	# list the current SCREEN sessions
 	cd /run/screen/S-$USER
 	for S in *; do
+		if [ "$S" == "*" ]; then
+			echo "no server processes found."
+			break;
+		fi 
 		echo '======== '$S' ========'
 		screen -S $S -X hardcopy /tmp/$USER-$S
 		cat /tmp/$USER-$S
+		rm -f /tmp/$USER-$S
 	done | more -s
 
 	;;

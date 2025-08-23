@@ -6,21 +6,15 @@
 <head>
   <title>bike monitor</title>
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-<script async src="https://maps.google.com/maps/api/js?key=AIzaSyCRYNZhuhQHIMtHsvg5UZ65gcuiIn9lSzY&loading=async&libraries=streetView&callback=initialize"
-type="text/javascript"></script>
-  <style type="text/css">
-    xcanvas#xmyChart { position: absolute; right:0px; top:0px; left:0px; height:500px !important;}
-    iframe { position: absolue; right:120px; left:150px; top:0px; }
+  <style>
+    iframe { position: absolute; right:120px; left:150px; top:0px; }
     body  {padding:0; margin:0; position: absolute; top:0; left:0; bottom:0; right:0;}
   </style>
 </head>
 <body>
-  <div style="position:absolute; z-index: 100; top:100px, left: 50px; width: 310px; min-width: 310px; height: 190px; min-height: 190px;"><textarea id="tardisdiary" style="position: absolute; resize: none; top: 90px;width: 100%; height: 100%; font-family:'Fira Code Retina','monospace',monospace; background-image: url(tardisdoorpanel.png); color:white; margin: 20px; overflow-x:hidden; overflow-y: hidden; white-space: pre-wrap; display: inline-block;font-size:15px;font-weight: bold;"></textarea></div>
-  <div id="tardis" style="opacity: 0;position:absolute;z-index:200; top:40%; left:40%;margin:auto;width:20%;height:20%;background-image: url('tardis.gif'); background-size: cover;display:block !important;"><br><div style="background-color: white; text-align: center;"><span id="fromdate"></span><span style="font-family: 'Fira Code Retina';">=&gt;</span><span id="todate"></span></div></div>
-<div id="chartcon">
-  <canvas id="myChart" width="0" height="0"></canvas>
-</div>
-<div id="street-view" style="width:100%; height: 440px;"></div>
+<!-- div id="chartcon"-->
+  <canvas id="myChart" style="width: 100%; height: 100%;" ></canvas>
+<!-- </div -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
@@ -29,14 +23,14 @@ type="text/javascript"></script>
   let nextSound = 0;
   //= new Audio("dematbrief.wav");
   function setChartPos(){
-    let mychart = document.getElementById("chartcon");
+    let mychart = document.getElementById("myChart");
     let w=parseFloat(document.body.clientWidth);
     let h=document.body.clientHeight;
-    mychart.width=w/3.0;
-    mychart.height=h/3.0;
+    mychart.width=w;
+    mychart.height=h;
     mychart.style.position='absolute';
-    mychart.style.width = (w/3.1)+"px";
-    mychart.style.height=(h/2.3)+"px";
+    mychart.style.width = (w)+"px";
+    mychart.style.height=(h)+"px";
     mychart.style.top=0;
     mychart.style.right = 0 ;
     //mychart.style.left = (w*(2.0/3.0))+"px";
@@ -47,42 +41,19 @@ type="text/javascript"></script>
     console.log(mychart.style);
     //mychart.style.width = (w/3.0)+"px";
   }
-let panorama;
 let svservice;
 let tardis;
 function initialize() {
-    tardis = document.getElementById("tardis");
-    let streetview = document.getElementById("street-view")
-    streetview.style.height=(parseFloat(document.body.clientHeight) - 20)+"px";
-    streetview.style.opacity = 1;
-    setChartPos();
-    initdata();
-    initChart();
-    panorama = new google.maps.StreetViewPanorama(
-        document.getElementById("street-view"),
-        {
-            /* 3370 S. New York Ave */
-            /* xxposition: { lat: 42.982945, lng: -87.878384 }, */
-            /* Brandon Estate, London [Dr. Who Filming Location] */
-            /* position: { lat: 51.482532, lng: -0.102943 }, */
-            /* 2959 Maple Road, Camp Hill, PA 17011 */
-            //position: { lat: 40.244901, lng: -76.9332146 },
-            // fishermans wharf
-            // position: {lat: 37.8080168,lng:-122.4201298 },
-            // postcard view, ggb [it's crap]
-            // position: {lat: 37.8087372,lng:-122.4756029 },
-	    // Powell & Sutter Sts., SF, CA
-	    //position: {lat: 37.7888571,lng: -122.4085676},
-	    position: {lat: 37.8669408, lng: -122.287221},
-            pov: { heading: 0, pitch: 0 },
-            zoom: 1,
-        }
-    );
-    svservice = new google.maps.StreetViewService();
+  tardis = document.getElementById("tardis");
+  setChartPos();
+  initdata();
+  initChart();
 }
 
   const NVALUES=50; // number of data points shown on screen
   const MARKERS_PER_MILE = 20;
+  const LOOKAHEAD = 15;
+  const LANDSCAPES = 10;
   const ctx = document.getElementById('myChart');
 
 
@@ -92,6 +63,9 @@ function initialize() {
   let anim_running = false;
   let keep_anim_running = false;
   let Speeds;
+  let LandscapeY;
+  let LandscapeX;
+  let Landpts;
   let Labels;
   let Dists;
   let Xaxis;
@@ -111,14 +85,24 @@ function initialize() {
     Labels = Array(NVALUES);
     Dists  = Array(NVALUES);
     Xaxis = Array(NVALUES);
+    LandscapeY = Array(LANDSCAPES);
+    LandscapeX = Array(LANDSCAPES);
+
     Datapts = []
     for (var i = 0; i < NVALUES;++i) {
       Xaxis[i]=i;
       Datapts.push({x:Xaxis[i]+5,y:Speeds[i]});
     }
     Datapts.push(Datapts[NVALUES-1]);
+
+    Landpts = [];
+    for (var i = 0; i < LANDSCAPES; ++i) {
+       LandscapeX[i] = i*5;
+       LandscapeY[i] = 15;
+       Landpts.push({x:LandscapeX[i]+5,y:LandscapeY[i]});
+    }
     lastepochdate = -1;
-    K_XMIN = 0.0;
+
     K_XMIN_VEL = 0.0;
     prev_dp_time = 0;
     pprev_dp_time = 0;
@@ -136,10 +120,17 @@ function initialize() {
           pointRadius: 2,
           cubicInterpolationMode: 'monotone',
           font: {size:15},
-          fill: {value:0},
-          data: Speeds,
+          xxxxfill: {value:0},
+          //data: Speeds,
           borderWidth: 5,
           showLine: true
+        },{
+          label: 'landscape',
+          pointRadius: 4,
+          font: { size:20},
+          //data: 
+          borderWidth: 2,
+          showLine:true
         }]
       },
       options: {
@@ -157,10 +148,10 @@ function initialize() {
               color:'#000000',
               lineWidth: 2
             },
-            ticks: {
-              font: {size:15},
-              callback: (x) => { return x+' mph'}
-            },
+            //ticks: {
+            //  font: {size:15},
+            //  callback: (x) => { return x+' mph'}
+            //},
             afterTickToLabelConversion: (axis) => {
               var axtics = [];
               var xmax=axis.max;
@@ -199,20 +190,23 @@ function initialize() {
                 }
               }
                 axtics.push({
-                  value: xmax,
-                  label: ''
+                  value: xmax-LOOKAHEAD,
+                  label: '',
                 });
               axis.ticks = axtics;
               
               axis.min=xmin;
               axis.max=xmax;
-              
+	      if (our_chart && our_chart.data) 
+		    //if (our_chart.data.datasets[0].data[NVALUES].x > xmax-1){ //-LOOKAHEAD) {
+			    our_chart.data.datasets[0].data[NVALUES].x  = Math.floor(xmax+1); // -LOOKAHEAD;
+		    //}
               //console.log('ticks set');
             }
           },
           y:{
             beginAtZero: true, min:0,max:40,
-            position: 'right',
+            position: 'left',
             afterBuildTicks: (axis) => [0,5,10,15,20,25,30,35,40].map(v => ({value:v})),
             grid: {color:'blue', lineWidth:2},
             ticks: { 
@@ -234,15 +228,6 @@ function dothedew(strdata) {
       // ** clearing system **
       initdata();
       console.log("*** clearing system ***");
-    }
-    let thisDistance = parseFloat(data.distance);
-    if (lastMapClickDistance > -1) {
-      if (thisDistance - lastMapClickDistance > 0.005) {
-        mapGo();
-        lastMapClickDistance = thisDistance;
-      }
-    } else {
-      lastMapClickDistance = thisDistance;
     }
     // === SPEED ===
     Speeds.shift();
@@ -277,8 +262,10 @@ function dothedew(strdata) {
     Datapts.shift()
     Datapts.length = NVALUES+1;
     Datapts[NVALUES-1] = { x:Xaxis[NVALUES-1], y:Speeds[NVALUES-1], label:Labels[NVALUES-1]};
+    var xm = our_chart.da
     Datapts[NVALUES] = { x:Xaxis[NVALUES-1]+5, y:Speeds[NVALUES-1], label:Labels[NVALUES-1]};
     our_chart.data.datasets[0].data = Datapts;
+    our_chart.data.datasets[1].data = Landpts;
     our_chart.labels = Labels;
     
     //our_chart.options.scales.x.min = Xaxis[0];
@@ -330,7 +317,11 @@ function animatex() {
 
   chart_range = NVALUES;
   our_chart.options.scales.x.min = K_XMIN+2;
-  our_chart.options.scales.x.max = K_XMIN+chart_range;
+  our_chart.options.scales.x.max = K_XMIN+chart_range+LOOKAHEAD;
+  if (our_chart.data.datasets[0].data[NVALUES].x > K_XMIN+chart_range) {
+	    //our_chart.data.datasets[0].data[NVALUES].x  = xmax-LOOKAHEAD;
+	    our_chart.data.datasets[0].data[NVALUES].x = K_XMIN+chart_range;
+  }
   our_chart.update();
   if (keep_anim_running) {
     setTimeout(animatex, 1000/60);
@@ -369,81 +360,6 @@ function bestLink(links, ourheading) {
   }
 }
 
-function nudgeToBestLink() {
-  let our_pov = panorama.getPov();
-  let ourheading = our_pov.heading;
-  let links = panorama.getLinks();
-  let bestlink = bestLink(links,ourheading);
-  if (bestlink > -1) {
-    // point towards best link
-    // let's figure out which way we need to turn on go 1/3 of the way there, plus a fixed
-    // smudge so we converge reasonably
-    var getpov = panorama.getPov();
-    var here = getpov.heading;
-    var there = links[bestlink].heading;
-    var diff = there - here;
-    if (diff <= -180) diff += 360;
-    if (diff > 180) diff -= 360;
-    var nudge = diff/3+Math.sign(diff);
-    if (Math.abs(diff) < 1) {
-      getpov.heading = there;
-      panorama.setPov(getpov);
-    } else {
-      getpov.heading += nudge;
-
-      panorama.setPov(getpov);
-      window.setTimeout(nudgeToBestLink,33);
-    }
-  }
-}
-let mapdate='';
-let mapshortdesc = '';
-
-function mapGo(){
-  var our_pov = panorama.getPov();
-  var ourheading = our_pov.heading;
-  var links=panorama.getLinks();
-  var bestlink = bestLink(links,ourheading);
-  console.log(links);
-  if (bestlink > -1) {
-    nudgeToBestLink();
-    // point in direction of move
-    var getpov = panorama.getPov();
-    getpov.heading = links[bestlink].heading;
-    //panorama.setPov(getpov);
-    svservice.getPanoramaById(links[bestlink].pano).then((e) => {
-      var data=e.data;
-      console.log("NEW PANO DATA! ");
-      console.log(data);
-      if (mapdate != "") {
-        if (mapdate != data.imageDate) {
-          let textarea=$("#tardisdiary")[0];
-          textarea.value += String.fromCharCode(13) + mapdate + "=>"+data.imageDate + ": " + data.location.shortDescription;
-          textarea.scrollTop = textarea.scrollHeight;
-          console.log("TEXTAREA: "+textarea.value);
-          console.log(JSON.stringify(textarea.value));
-          // play tardis sound
-          console.log("VWORP! VWORP!");
-					playSoundAsync();
-          // tardis
-          tardis.style.zIndex=200;
-          tardis.style.display='block';
-          $("#fromdate").html(mapdate);
-          $("#todate").html(data.imageDate);
-          $(tardis).animate({opacity: 1},600,()=>{$(tardis).animate({opacity: 0},2000,function(){$(this).css("display: block")})})
-        }
-      }
-      mapdate = data.imageDate;
-      mapshortdesc = data.location.shortDescription;
-      console.log(mapdate);
-    });
-    panorama.setPano(links[bestlink].pano);
-  } else {
-    console.log("NO LINKS???");
-  }
-}
-
-
 // check for data 
 let olddata;
 function checkForNewData() {
@@ -463,11 +379,16 @@ function checkForNewData() {
     });
 }
 
-window.addEventListener("load", initialize(), false);
 
 
 
-
+function protoinit() {
+	window.setTimeout(()=>{
+		initialize();
+		checkForNewData();
+	},1000);
+}
+//window.addEventListener("load", protoinit, false);
 
 // ************* WEBSOCKET CODE *************
 /*
@@ -514,7 +435,7 @@ var tapped = function(e){
 document.body.addEventListener('touchstart', tapped, false);
 document.body.addEventListener('mousedown', tapped, false);
 document.body.addEventListener('click', tapped, false);
-console.log("initializing");
+
 </script>
 </body>
 </html>

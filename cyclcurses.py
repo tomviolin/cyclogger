@@ -2,7 +2,6 @@
 
 distance=0.0
 lasttime=0.0
-firsttime=0.0
 import io,sys,time,math
 import sqlite3
 import RPi.GPIO as GPIO
@@ -12,7 +11,7 @@ import threading
 import statistics as st
 import json,os,sys
 
-spdchars=" 1234567█"
+spdchars=" ▁▂▃▄▅▆▇█"
 
 cycleq = queue.Queue()
 Q_ITEM_UPDATE = 0
@@ -121,7 +120,6 @@ def main(stdscr):
     stdscr.clear()
     lasttime=0
     distance=0
-    firsttime = 0
     running = True
     stdscr.nodelay(True)
     while running:
@@ -143,7 +141,7 @@ def main(stdscr):
             thistime = cycleq.get_nowait()
         except queue.Empty:
             if lasttime > 0:
-                if time.time()-lasttime > 120:
+                if time.time()-lasttime > 15:
                     # kick it
                     sys.exit(0)
             #time.sleep(0.05)
@@ -151,7 +149,6 @@ def main(stdscr):
         # if there is a last time....
         if lasttime == 0:
             lasttime=thistime
-            firsttime = thistime
             continue
         else:
             # compute dt since last time
@@ -161,7 +158,7 @@ def main(stdscr):
                 # too short, kick it
                 lasttime=thistime
                 continue
-            if dt > 120:
+            if dt > 15:
                 # too long, kick it
                 distance=0
                 lasttime = 0
@@ -199,87 +196,86 @@ def main(stdscr):
             #x.start()
 
 
-            if cycleq.qsize() <= 1:
-                # reread the screen size in case it has changed
-                nrows,ncols = stdscr.getmaxyx()
-                # update screen
-                stdscr.clear()
-                # add speed to graph data
-                ospeeds += [speed]
-                odistances += [ distance ]
-                # truncate if necessary
-                if len(ospeeds) > ncols:
-                    ospeeds=ospeeds[-ncols:]
-                if len(odistances) > ncols:
-                    odistances=odistances[-ncols:]
-                for spds in range(0,ncols):
-                    if spds >= len(ospeeds):
-                        continue
-                    if ospeeds[spds]==0:
-                        continue
-                    ts =ospeeds[spds]
-                    nblks=ts*nrows/SPEED_SCALE
-                    if nblks > nrows-2:
-                        nblks = nrows-2
-                    nbi = int(math.floor(nblks))
-                    nbr =  nblks-nbi
-                    nbr=int(math.floor(nbr*8))
-                    #for r in range(nrows-2,nrows-2-nbi,-1):
-                    milestone10 = False
-                    if spds > 0 and int(odistances[spds]*10) > int(odistances[spds-1]*10):
-                        milestone10 = True
-                    spdrow = nrows-2-nbi
-                    for r in range(nrows-2,0,-1):
-                        pcolor = curses.color_pair(rcolor(r))|curses.A_BOLD
-                        pchar = ' '
-                        if milestone10:
-                            pchar = '|'
-                            pcolor=rcolor(nrows-1)
-                        else:
-                            if r > spdrow and spds>=0 and spds<ncols:
-                                pchar ='█'
-                            else:
-                                if r == nrows-2-nbi:
-                                    pchar = spdchars[nbr]
-                        stdscr.addstr(r,spds,pchar,pcolor)
-                        if milestone10:
-                            dstr = f"{int(odistances[spds]*10)/10}mi"
-                            dsrow = 0
-                            dscol = spds-len(dstr)//2
-                            if dscol+len(dstr) > ncols-1:
-                                dscol = ncols-1 - len(dstr)
-                            if dscol < 0: dscol=0
-                            stdscr.addstr(dsrow,dscol,dstr)
 
-
-                    stdscr.addstr(nrows-2-nbi,spds,'█',curses.color_pair(rcolor(r))|curses.A_BOLD)
-                    stdscr.addstr(nrows-2-nbi,spds,spdchars[nbr],curses.color_pair(rcolor(nrows-2-nbi))|curses.A_BOLD)
-                    for i in range(0,45,5):
-                        drow = nrows-2-(int(math.floor(i*nrows/SPEED_SCALE)))
-                        if drow >= 0:
-                            stdscr.addstr(nrows-2-(int(math.floor(i*nrows/SPEED_SCALE))),0,"-"*ncols)
-                            stdscr.addstr(nrows-2-(int(math.floor(i*nrows/SPEED_SCALE))),0,f"{i} mph")
-                for spds in range(ncols):
-                    if spds >= len(ospeeds):
-                        continue
-                    if ospeeds[spds]==0:
-                        continue
-                    ts =ospeeds[spds]
-                    nblks=ts*nrows/SPEED_SCALE
-                    if nblks > nrows-2:
-                        nblks = nrows-2
-                    nbi = int(math.floor(nblks))
-                    nbr =  nblks-nbi
-                    nbr=int(math.floor(nbr*8))
-                    r=nrows-2-nbi
-                    pchar = spdchars[nbr]
+            # reread the screen size in case it has changed
+            nrows,ncols = stdscr.getmaxyx()
+            # update screen
+            stdscr.clear()
+            # add speed to graph data
+            ospeeds += [speed]
+            odistances += [ distance ]
+            # truncate if necessary
+            if len(ospeeds) > ncols:
+                ospeeds=ospeeds[-ncols:]
+            if len(odistances) > ncols:
+                odistances=odistances[-ncols:]
+            if False: #for spds in range(0,ncols):
+                if spds >= len(ospeeds):
+                    continue
+                if ospeeds[spds]==0:
+                    continue
+                ts =ospeeds[spds]
+                nblks=ts*nrows/SPEED_SCALE
+                if nblks > nrows-2:
+                    nblks = nrows-2
+                nbi = int(math.floor(nblks))
+                nbr =  nblks-nbi
+                nbr=int(math.floor(nbr*8))
+                #for r in range(nrows-2,nrows-2-nbi,-1):
+                milestone10 = False
+                if spds > 0 and int(odistances[spds]*10) > int(odistances[spds-1]*10):
+                    milestone10 = True
+                spdrow = nrows-2-nbi
+                if False: #for r in range(nrows-2,0,-1):
                     pcolor = curses.color_pair(rcolor(r))|curses.A_BOLD
-                    stdscr.addstr(nrows-2-nbi,spds,pchar,pcolor)
-                # display current time, speed, etc.
-                stdscr.addnstr(nrows-1,0,f"{tf('%H:%M:%S',thistime)} ({tf('%H:%M:%S',thistime-firsttime)})  {1/kdt:1.02f}rev/s {speed:-2.02f}mph d={distance:02.03f} {cycleq.qsize()}",ncols)
+                    pchar = ' '
+                    if milestone10:
+                        pchar = '|'
+                        pcolor=rcolor(nrows-1)
+                    else:
+                        if r > spdrow and spds>=0 and spds<ncols:
+                            pchar ='█'
+                        else:
+                            if r == nrows-2-nbi:
+                                pchar = spdchars[nbr]
+                    stdscr.addstr(r,spds,pchar,pcolor)
+                    if milestone10:
+                        dstr = f"{int(odistances[spds]*10)/10}mi"
+                        dsrow = 0
+                        dscol = spds-len(dstr)//2
+                        if dscol+len(dstr) > ncols-1:
+                            dscol = ncols-1 - len(dstr)
+                        if dscol < 0: dscol=0
+                        stdscr.addstr(dsrow,dscol,dstr)
+
+
+                #stdscr.addstr(nrows-2-nbi,spds,'█',curses.color_pair(rcolor(r))|curses.A_BOLD)
+                #stdscr.addstr(nrows-2-nbi,spds,spdchars[nbr],curses.color_pair(rcolor(nrows-2-nbi))|curses.A_BOLD)
+                for i in range(0,45,5):
+                    drow = nrows-2-(int(math.floor(i*nrows/SPEED_SCALE)))
+                    if drow >= 0:
+                        stdscr.addstr(nrows-2-(int(math.floor(i*nrows/SPEED_SCALE))),0,"-"*ncols)
+                        stdscr.addstr(nrows-2-(int(math.floor(i*nrows/SPEED_SCALE))),0,f"{i} mph")
+            if False: #for spds in range(ncols):
+                if spds >= len(ospeeds):
+                    continue
+                if ospeeds[spds]==0:
+                    continue
+                ts =ospeeds[spds]
+                nblks=ts*nrows/SPEED_SCALE
+                if nblks > nrows-2:
+                    nblks = nrows-2
+                nbi = int(math.floor(nblks))
+                nbr =  nblks-nbi
+                nbr=int(math.floor(nbr*8))
+                r=nrows-2-nbi
+                pchar = spdchars[nbr]
+                pcolor = curses.color_pair(rcolor(r))|curses.A_BOLD
+                stdscr.addstr(nrows-2-nbi,spds,pchar,pcolor)
+            # display current time, speed, etc.
+            stdscr.addnstr(nrows-1,0,f"{tf('%H:%M:%S',thistime)} {1/kdt:1.02f}rev/s {speed:-2.02f}mph d={distance:02.03f} {cycleq.qsize()}",ncols)
         lasttime = thistime
-        if cycleq.qsize() <= 1:
-            time.sleep(0.01)
-            stdscr.refresh()
+        time.sleep(0.1)
+        stdscr.refresh()
 
 curses.wrapper(main)

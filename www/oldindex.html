@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- vim:tabstop=2:softtabstop=2:shiftwidth=2:expandtab:ignorecase
+<!-- vim:tabstop=2:softtabstop=2:shiftwidth=2:expandtab
 -->
 <meta charset="utf-8">
 <html lang="en">
@@ -15,8 +15,7 @@ type="text/javascript"></script>
   </style>
 </head>
 <body>
-  <div style="position:absolute; z-index: 100; top:100px, left: 50px; width: 310px; min-width: 310px; height: 190px; min-height: 190px;"><textarea id="tardisdiary" style="position: absolute; resize: none; top: 90px;width: 100%; height: 100%; font-family:'Fira Code Retina','monospace',monospace; background-image: url(tardisdoorpanel.png); color:white; margin: 20px; overflow-x:hidden; overflow-y: hidden; white-space: pre-wrap; display: inline-block;font-size:15px;font-weight: bold;"></textarea></div>
-  <div id="tardis" style="opacity: 0;position:absolute;z-index:200; top:40%; left:40%;margin:auto;width:20%;height:20%;background-image: url('tardis.gif'); background-size: cover;display:block !important;"><br><div style="background-color: white; text-align: center;"><span id="fromdate"></span><span style="font-family: 'Fira Code Retina';">=&gt;</span><span id="todate"></span></div></div>
+<div id="tardis" style="opacity: 0;position:absolute;z-index:200; top:40%; left:40%;margin:auto;width:20%;height:20%;background-image: url('tardis.gif'); background-size: cover;display:block !important;"></div>
 <div id="chartcon">
   <canvas id="myChart" width="0" height="0"></canvas>
 </div>
@@ -24,10 +23,7 @@ type="text/javascript"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-  let NSOUNDS = 3;
-  var tardissound=Array(NSOUNDS);
-  let nextSound = 0;
-  //= new Audio("dematbrief.wav");
+var tardissound; //= new Audio("dematbrief.wav");
   function setChartPos(){
     let mychart = document.getElementById("chartcon");
     let w=parseFloat(document.body.clientWidth);
@@ -61,19 +57,7 @@ function initialize() {
     panorama = new google.maps.StreetViewPanorama(
         document.getElementById("street-view"),
         {
-            /* 3370 S. New York Ave */
-            /* xxposition: { lat: 42.982945, lng: -87.878384 }, */
-            /* Brandon Estate, London [Dr. Who Filming Location] */
-            /* position: { lat: 51.482532, lng: -0.102943 }, */
-            /* 2959 Maple Road, Camp Hill, PA 17011 */
-            //position: { lat: 40.244901, lng: -76.9332146 },
-            // fishermans wharf
-            // position: {lat: 37.8080168,lng:-122.4201298 },
-            // postcard view, ggb [it's crap]
-            // position: {lat: 37.8087372,lng:-122.4756029 },
-	    // Powell & Sutter Sts., SF, CA
-	    //position: {lat: 37.7888571,lng: -122.4085676},
-	    position: {lat: 37.8669408, lng: -122.287221},
+            position: { lat: 42.982945, lng: -87.878384 },
             pov: { heading: 0, pitch: 0 },
             zoom: 1,
         }
@@ -97,9 +81,7 @@ function initialize() {
   let Xaxis;
   let Datapts;
   let K_XMIN = 0.0;
-  let K_XMIN_VEL = 0.0;
-  let prev_dp_time = 0;
-  let pprev_dp_time = 0;
+
   let lastMapTickDistance = -1;
 
   let our_chart;
@@ -119,9 +101,6 @@ function initialize() {
     Datapts.push(Datapts[NVALUES-1]);
     lastepochdate = -1;
     K_XMIN = 0.0;
-    K_XMIN_VEL = 0.0;
-    prev_dp_time = 0;
-    pprev_dp_time = 0;
     lastMapClickDistance = -1;
   }
   function initChart() {
@@ -147,7 +126,7 @@ function initialize() {
         animation: false,
         layout: {
           padding: {
-            left: 45
+            left: 25
           }
         },
         scales: {
@@ -191,7 +170,7 @@ function initialize() {
                   // beginning mile marker 0
                   if (true || parseFloat(Dists[i+1]) < 26.0/12/5280) {
                     var tik= {
-                      value: Xaxis[i+1],
+                      value: Xaxis[i],
                       label: "start"
                     };
                     axtics.push(tik);
@@ -237,7 +216,7 @@ function dothedew(strdata) {
     }
     let thisDistance = parseFloat(data.distance);
     if (lastMapClickDistance > -1) {
-      if (thisDistance - lastMapClickDistance > 0.005) {
+      if (thisDistance - lastMapClickDistance > 0.01) {
         mapGo();
         lastMapClickDistance = thisDistance;
       }
@@ -284,7 +263,6 @@ function dothedew(strdata) {
     //our_chart.options.scales.x.min = Xaxis[0];
     //our_chart.options.scales.x.max = Xaxis[NVALUES-1];
     //our_chart.update();
-    dpArrived();
     if (!anim_running) {
       //console.log("calling animatex...");
       keep_anim_running = true;
@@ -293,56 +271,29 @@ function dothedew(strdata) {
   }
 }
 
-
-function dpArrived() {
-  pprev_dp_time = prev_dp_time;
-  prev_dp_time = Date.now();
-}
-
 function animatex() {
   if (!keep_anim_running) {
     anim_running = false;
     return;
   }
-
   anim_running = true;
-  console.log("***TIMES: "+pprev_dp_time+", "+prev_dp_time);
-  if (pprev_dp_time != 0) {
-    //console.log("animatex!!");
-
-    // calculate expected position based on velocity
-    let prev_interval = prev_dp_time - pprev_dp_time;
-    let this_time = Date.now();
-    let this_interval = this_time - prev_dp_time;
-    let this_interval_frac = this_interval / prev_interval;
-    if (this_interval_frac > 3.0)  {
-      K_XMIN_VEL=0;
-    } else{
-      let prev_min = Xaxis[0];
-      let pprev_min = prev_min - 1;
-      let pred_min = prev_min + (prev_min - pprev_min)*this_interval_frac;
-      let prev_vel = (prev_min - pprev_min) / (prev_dp_time - pprev_dp_time);
-      K_XMIN_VEL += (prev_vel - K_XMIN_VEL) * 0.10 + (pred_min - K_XMIN)*0.0055;
-    }
-  }
-  K_XMIN += K_XMIN_VEL;
-  
-
+  //console.log("animatex!!");
   chart_range = NVALUES;
+  curmin = Xaxis[0];
+  K_XMIN = K_XMIN*0.9 + curmin*0.1;
   our_chart.options.scales.x.min = K_XMIN+2;
   our_chart.options.scales.x.max = K_XMIN+chart_range;
   our_chart.update();
   if (keep_anim_running) {
-    setTimeout(animatex, 1000/60);
-  } else {
+    setTimeout(animatex, 1000/20);
+  }else{
     anim_running = false;
   }
 }
 
 
 function playSoundAsync(){
-    tardissound[nextSound].play();
-    nextSound = (nextSound + 1) % NSOUNDS;
+    tardissound.play();
 }
 
 
@@ -397,7 +348,6 @@ function nudgeToBestLink() {
   }
 }
 let mapdate='';
-let mapshortdesc = '';
 
 function mapGo(){
   var our_pov = panorama.getPov();
@@ -417,24 +367,16 @@ function mapGo(){
       console.log(data);
       if (mapdate != "") {
         if (mapdate != data.imageDate) {
-          let textarea=$("#tardisdiary")[0];
-          textarea.value += String.fromCharCode(13) + mapdate + "=>"+data.imageDate + ": " + data.location.shortDescription;
-          textarea.scrollTop = textarea.scrollHeight;
-          console.log("TEXTAREA: "+textarea.value);
-          console.log(JSON.stringify(textarea.value));
           // play tardis sound
           console.log("VWORP! VWORP!");
 					playSoundAsync();
           // tardis
           tardis.style.zIndex=200;
           tardis.style.display='block';
-          $("#fromdate").html(mapdate);
-          $("#todate").html(data.imageDate);
           $(tardis).animate({opacity: 1},600,()=>{$(tardis).animate({opacity: 0},2000,function(){$(this).css("display: block")})})
         }
       }
       mapdate = data.imageDate;
-      mapshortdesc = data.location.shortDescription;
       console.log(mapdate);
     });
     panorama.setPano(links[bestlink].pano);
@@ -442,35 +384,7 @@ function mapGo(){
     console.log("NO LINKS???");
   }
 }
-
-
-// check for data 
-let olddata;
-function checkForNewData() {
-  fetch("./latest.json?time="+Date.now())
-    .then((e)=>{
-      e.text()
-        .then((t)=>{
-          if (olddata) {
-            if (olddata != t) {
-              console.log(t);
-              dothedew(t);
-            }
-          }
-          olddata = t;
-          window.setTimeout(checkForNewData,300);
-        });
-    });
-}
-
-window.addEventListener("load", initialize(), false);
-
-
-
-
-
 // ************* WEBSOCKET CODE *************
-/*
 let socket;// = new WebSocket("ws://"+location.host+"/wsck");
 function openWebSocket() {
   socket = new WebSocket("ws://"+location.host+"/wsck");
@@ -502,19 +416,17 @@ function openWebSocket() {
 }
 
 openWebSocket();
-*/
+
 var tapped = function(e){
   //e.preventDefault();
-  for (let i = 0; i < NSOUNDS; ++i) {
-    tardissound[i] = new Audio("dematbrief.wav");
-    tardissound[i].play();
-    tardissound[i].pause();
-  }
+  tardissound = new Audio("dematbrief.wav");
+  tardissound.play();
+  tardissound.pause();
 };
 document.body.addEventListener('touchstart', tapped, false);
 document.body.addEventListener('mousedown', tapped, false);
 document.body.addEventListener('click', tapped, false);
-console.log("initializing");
+
 </script>
 </body>
 </html>

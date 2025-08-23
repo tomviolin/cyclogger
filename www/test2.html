@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+	<body>
+		<textarea id="texta">test&#13;&#10;test</textarea>
+	<script>
+		var ta=document.getElementById("texta");
+		function taChange(e) {
+			console.log("**textarea change");
+			console.log(ta.value);
+			console.log(JSON.stringify(ta.value));
+		}
+		console.log(ta.value);
+		console.log(JSON.stringify(ta.value));
+		ta.addEventListener("change", taChange, false);
+	</script>
+	</body>
+</html>
+

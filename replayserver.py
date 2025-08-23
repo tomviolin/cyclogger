@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 ''' replays a workout for testing the web function. '''
-import os
+import os,sys
 import time
 import json
+import glob
 
 def writelatest(output):
     data = output.split(",")
@@ -17,8 +18,14 @@ def writelatest(output):
     os.rename("_latest.json","latest.json")
 
 ts = time.strftime("%Y%m%d")
-ts="20240226"
 f=f"cyclelog-{ts}.csv"
+if len(sys.argv)>1:
+    f=sys.argv[1]
+if not os.path.exists(f):
+    fnames = sorted(glob.glob("cyclelog-2*.csv"))
+    f=fnames[-1]
+
+print (f"playing back {f}...")
 
 infile = open(f, "r")
 

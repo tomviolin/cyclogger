@@ -20,7 +20,7 @@ async def sendcycle(websocket):
             print("waiting for new data...",end='',flush=True)
             while lastcycledata == thiscycledata:
                 print(".",end='',flush=True)
-                time.sleep(0)
+                time.sleep(0.01)
                 thiscycledata = open("latest.json","r").read()
             print("GOT IT!")
 
