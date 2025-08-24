@@ -38,6 +38,9 @@
     var tardissound = Array(NSOUNDS);
     let nextSound = 0;
     //= new Audio("dematbrief.wav");
+
+    let flapstate = 1;
+
     function setChartPos() {
       let mychart = document.getElementById("myChart");
       let w = parseFloat(document.body.clientWidth);
@@ -68,8 +71,8 @@
 
     const NVALUES = 50; // number of data points shown on screen
     const MARKERS_PER_MILE = 20;
-    const LOOKAHEAD = 15;
-    const LANDSCAPES = 10;
+    const LOOKAHEAD = 25;
+    const LANDSCAPES = NVALUES+LOOKAHEAD+4;
     const ctx = document.getElementById('myChart');
 
 
@@ -86,6 +89,7 @@
     let Dists;
     let Xaxis;
     let Datapts;
+    let DpointStyle;
     let K_XMIN = 0.0;
     let K_XMIN_VEL = 0.0;
     let prev_dp_time = 0;
@@ -93,6 +97,10 @@
     let lastMapTickDistance = -1;
 
     let our_chart;
+
+    let flap_state = 0;
+
+    let bird_frames=[null,null];
 
     function initdata() {
       anim_running = false;
@@ -104,20 +112,40 @@
       LandscapeY = Array(LANDSCAPES);
       LandscapeX = Array(LANDSCAPES);
 
-      Datapts = []
+      bird = new Image();
+      bird.src="bird.png";
+
+  
+
+      bird_frames[0] = new Image();
+      bird_frames[0].src = "bird_flap1.png";
+      bird_frames[0].style.width = "78px";
+
+      bird_frames[1] = new Image();
+      bird_frames[1].src = "bird_flap2.png";
+      bird_frames[1].style.width = "52px";
+
+
+      Datapts = [];
+      DpointStyle = [];
       for (var i = 0; i < NVALUES; ++i) {
         Xaxis[i] = i;
         Datapts.push({ x: Xaxis[i] + 5, y: Speeds[i] });
+        DpointStyle.push(null);
       }
       Datapts.push(Datapts[NVALUES - 1]);
+      DpointStyle.push(bird_frames[flap_state]);
 
       Landpts = [];
       for (var i = 0; i < LANDSCAPES; ++i) {
-        LandscapeX[i] = i * 5;
-        LandscapeY[i] = 15;
-        Landpts.push({ x: LandscapeX[i] + 5, y: LandscapeY[i] });
+        LandscapeX[i] = i+1; // *(NVALUES / LANDSCAPES);
+        LandscapeY[i] = null; // Math.sin(i*Math.PI/8)*10 + 15;
+        Landpts.push({ x: LandscapeX[i] , y: LandscapeY[i] });
       }
       lastepochdate = -1;
+
+
+
 
       K_XMIN_VEL = 0.0;
       prev_dp_time = 0;
@@ -139,13 +167,20 @@
             xxxxfill: { value: 0 },
             //data: Speeds,
             borderWidth: 5,
-            showLine: true
+            borderColor: 'blue',
+            showLine: true,
+            pointStyle: DpointStyle,
+            usePointStyle: true
           }, {
             label: 'landscape',
-            pointRadius: 4,
+            pointRadius: 0,
             font: { size: 20 },
             //data: 
             borderWidth: 2,
+            fill: { value: 0 },
+            borderColor: '#654321',
+            backgroundColor: '#654321',
+            cubicInterpolationMode: 'monotone',
             showLine: true
           }]
         },
@@ -245,6 +280,17 @@
           initdata();
           console.log("*** clearing system ***");
         }
+        // === POINT STYLES ===
+        // updating point styles
+        flap_state = 1-flap_state;
+        DpointStyle[NVALUES] = bird_frames[flap_state];
+
+        // === LANDSCAPE ===
+        Landpts.shift();
+        Landpts.length = LANDSCAPES;
+        Landpts[LANDSCAPES-1] = { x: Landpts[LANDSCAPES-2].x + 1,
+          y: Math.sin(Landpts[LANDSCAPES-2].x * Math.PI/8)*10+15};
+
         // === SPEED ===
         Speeds.shift();
         Speeds.length = NVALUES;
@@ -283,6 +329,8 @@
         our_chart.data.datasets[0].data = Datapts;
         our_chart.data.datasets[1].data = Landpts;
         our_chart.labels = Labels;
+
+        our_chart.data.datasets[0].pointStyle = DpointStyle;
 
         //our_chart.options.scales.x.min = Xaxis[0];
         //our_chart.options.scales.x.max = Xaxis[NVALUES-1];
