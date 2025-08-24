@@ -1,3 +1,9 @@
+= Raspberry Pi Excercycle Logger
+
+*now featuring FLAPPY BIRD web client*
+
+
+
 This runs on a Raspberry Pi. It uses a Hall effect magnetic field sensor which detects a small fragment of
 a rare earth magnet duct-taped to the reflector on a stationary bike I use for excercise in the winter.  
 
