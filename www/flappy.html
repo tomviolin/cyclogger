@@ -124,14 +124,14 @@ function initialize() {
           //data: Speeds,
           borderWidth: 5,
           showLine: true
-        },{
-          label: 'landscape',
-          pointRadius: 4,
-          font: { size:20},
-          //data: 
-          borderWidth: 2,
-          showLine:true
-        }]
+	},{
+		label: 'landscape',
+		pointRadius: 4,
+		font: { size:20},
+		//data: 
+		borderWidth: 2,
+		showLine:true
+	}]
       },
       options: {
         plugins: {legend: {display: false,position: 'right', labels: {font:{size:15}, pointStyleWidth: 10, boxHeight: 8, pointStyle: 'circle',usePointStyle:true }}},
@@ -388,7 +388,10 @@ function protoinit() {
 		checkForNewData();
 	},1000);
 }
-//window.addEventListener("load", protoinit, false);
+window.addEventListener("load", protoinit, false);
+
+
+
 
 // ************* WEBSOCKET CODE *************
 /*
