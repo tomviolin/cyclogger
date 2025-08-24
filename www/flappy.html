@@ -3,443 +3,459 @@
 -->
 <meta charset="utf-8">
 <html lang="en">
+
 <head>
   <title>bike monitor</title>
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
   <style>
-    iframe { position: absolute; right:120px; left:150px; top:0px; }
-    body  {padding:0; margin:0; position: absolute; top:0; left:0; bottom:0; right:0;}
+    iframe {
+      position: absolute;
+      right: 120px;
+      left: 150px;
+      top: 0px;
+    }
+
+    body {
+      padding: 0;
+      margin: 0;
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+    }
   </style>
 </head>
+
 <body>
-<!-- div id="chartcon"-->
-  <canvas id="myChart" style="width: 100%; height: 100%;" ></canvas>
-<!-- </div -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- div id="chartcon"-->
+  <canvas id="myChart" style="width: 100%; height: 100%;"></canvas>
+  <!-- </div -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<script>
-  let NSOUNDS = 3;
-  var tardissound=Array(NSOUNDS);
-  let nextSound = 0;
-  //= new Audio("dematbrief.wav");
-  function setChartPos(){
-    let mychart = document.getElementById("myChart");
-    let w=parseFloat(document.body.clientWidth);
-    let h=document.body.clientHeight;
-    mychart.width=w;
-    mychart.height=h;
-    mychart.style.position='absolute';
-    mychart.style.width = (w)+"px";
-    mychart.style.height=(h)+"px";
-    mychart.style.top=0;
-    mychart.style.right = 0 ;
-    //mychart.style.left = (w*(2.0/3.0))+"px";
-    //mychart.style.width = (w/3.0)+"px";
-    mychart.style.aspectRatio = (w/h)+" / 1";
-    mychart.style.zIndex = 100;
-    mychart.style.backgroundColor = "#ffffffdd";
-    console.log(mychart.style);
-    //mychart.style.width = (w/3.0)+"px";
-  }
-let svservice;
-let tardis;
-function initialize() {
-  tardis = document.getElementById("tardis");
-  setChartPos();
-  initdata();
-  initChart();
-}
-
-  const NVALUES=50; // number of data points shown on screen
-  const MARKERS_PER_MILE = 20;
-  const LOOKAHEAD = 15;
-  const LANDSCAPES = 10;
-  const ctx = document.getElementById('myChart');
-
-
-  console.log(ctx.height); 
-
-
-  let anim_running = false;
-  let keep_anim_running = false;
-  let Speeds;
-  let LandscapeY;
-  let LandscapeX;
-  let Landpts;
-  let Labels;
-  let Dists;
-  let Xaxis;
-  let Datapts;
-  let K_XMIN = 0.0;
-  let K_XMIN_VEL = 0.0;
-  let prev_dp_time = 0;
-  let pprev_dp_time = 0;
-  let lastMapTickDistance = -1;
-
-  let our_chart;
-
-  function initdata(){
-    anim_running = false;
-    keep_anim_running = false;
-    Speeds = Array(NVALUES);
-    Labels = Array(NVALUES);
-    Dists  = Array(NVALUES);
-    Xaxis = Array(NVALUES);
-    LandscapeY = Array(LANDSCAPES);
-    LandscapeX = Array(LANDSCAPES);
-
-    Datapts = []
-    for (var i = 0; i < NVALUES;++i) {
-      Xaxis[i]=i;
-      Datapts.push({x:Xaxis[i]+5,y:Speeds[i]});
+  <script>
+    let NSOUNDS = 3;
+    var tardissound = Array(NSOUNDS);
+    let nextSound = 0;
+    //= new Audio("dematbrief.wav");
+    function setChartPos() {
+      let mychart = document.getElementById("myChart");
+      let w = parseFloat(document.body.clientWidth);
+      let h = document.body.clientHeight;
+      mychart.width = w;
+      mychart.height = h;
+      mychart.style.position = 'absolute';
+      mychart.style.width = (w) + "px";
+      mychart.style.height = (h) + "px";
+      mychart.style.top = 0;
+      mychart.style.right = 0;
+      //mychart.style.left = (w*(2.0/3.0))+"px";
+      //mychart.style.width = (w/3.0)+"px";
+      mychart.style.aspectRatio = (w / h) + " / 1";
+      mychart.style.zIndex = 100;
+      mychart.style.backgroundColor = "#ffffffdd";
+      console.log(mychart.style);
+      //mychart.style.width = (w/3.0)+"px";
     }
-    Datapts.push(Datapts[NVALUES-1]);
-
-    Landpts = [];
-    for (var i = 0; i < LANDSCAPES; ++i) {
-       LandscapeX[i] = i*5;
-       LandscapeY[i] = 15;
-       Landpts.push({x:LandscapeX[i]+5,y:LandscapeY[i]});
+    let svservice;
+    let tardis;
+    function initialize() {
+      tardis = document.getElementById("tardis");
+      setChartPos();
+      initdata();
+      initChart();
     }
-    lastepochdate = -1;
 
-    K_XMIN_VEL = 0.0;
-    prev_dp_time = 0;
-    pprev_dp_time = 0;
-    lastMapClickDistance = -1;
-  }
-  function initChart() {
-    our_chart = new Chart(ctx, {
-      type: 'scatter',
-      font: {size: 15},
-      animation: false,
-      data: {
-        labels: Labels,
-        datasets: [{
-          label: 'speed (mph)',
-          pointRadius: 2,
-          cubicInterpolationMode: 'monotone',
-          font: {size:15},
-          xxxxfill: {value:0},
-          //data: Speeds,
-          borderWidth: 5,
-          showLine: true
-	},{
-		label: 'landscape',
-		pointRadius: 4,
-		font: { size:20},
-		//data: 
-		borderWidth: 2,
-		showLine:true
-	}]
-      },
-      options: {
-        plugins: {legend: {display: false,position: 'right', labels: {font:{size:15}, pointStyleWidth: 10, boxHeight: 8, pointStyle: 'circle',usePointStyle:true }}},
+    const NVALUES = 50; // number of data points shown on screen
+    const MARKERS_PER_MILE = 20;
+    const LOOKAHEAD = 15;
+    const LANDSCAPES = 10;
+    const ctx = document.getElementById('myChart');
+
+
+    console.log(ctx.height);
+
+
+    let anim_running = false;
+    let keep_anim_running = false;
+    let Speeds;
+    let LandscapeY;
+    let LandscapeX;
+    let Landpts;
+    let Labels;
+    let Dists;
+    let Xaxis;
+    let Datapts;
+    let K_XMIN = 0.0;
+    let K_XMIN_VEL = 0.0;
+    let prev_dp_time = 0;
+    let pprev_dp_time = 0;
+    let lastMapTickDistance = -1;
+
+    let our_chart;
+
+    function initdata() {
+      anim_running = false;
+      keep_anim_running = false;
+      Speeds = Array(NVALUES);
+      Labels = Array(NVALUES);
+      Dists = Array(NVALUES);
+      Xaxis = Array(NVALUES);
+      LandscapeY = Array(LANDSCAPES);
+      LandscapeX = Array(LANDSCAPES);
+
+      Datapts = []
+      for (var i = 0; i < NVALUES; ++i) {
+        Xaxis[i] = i;
+        Datapts.push({ x: Xaxis[i] + 5, y: Speeds[i] });
+      }
+      Datapts.push(Datapts[NVALUES - 1]);
+
+      Landpts = [];
+      for (var i = 0; i < LANDSCAPES; ++i) {
+        LandscapeX[i] = i * 5;
+        LandscapeY[i] = 15;
+        Landpts.push({ x: LandscapeX[i] + 5, y: LandscapeY[i] });
+      }
+      lastepochdate = -1;
+
+      K_XMIN_VEL = 0.0;
+      prev_dp_time = 0;
+      pprev_dp_time = 0;
+      lastMapClickDistance = -1;
+    }
+    function initChart() {
+      our_chart = new Chart(ctx, {
+        type: 'scatter',
+        font: { size: 15 },
         animation: false,
-        layout: {
-          padding: {
-            left: 45
-          }
+        data: {
+          labels: Labels,
+          datasets: [{
+            label: 'speed (mph)',
+            pointRadius: 2,
+            cubicInterpolationMode: 'monotone',
+            font: { size: 15 },
+            xxxxfill: { value: 0 },
+            //data: Speeds,
+            borderWidth: 5,
+            showLine: true
+          }, {
+            label: 'landscape',
+            pointRadius: 4,
+            font: { size: 20 },
+            //data: 
+            borderWidth: 2,
+            showLine: true
+          }]
         },
-        scales: {
-          x:{
-            //bounds: 'data',
-            grid: {
-              color:'#000000',
-              lineWidth: 2
-            },
-            //ticks: {
-            //  font: {size:15},
-            //  callback: (x) => { return x+' mph'}
-            //},
-            afterTickToLabelConversion: (axis) => {
-              var axtics = [];
-              var xmax=axis.max;
-              var xmin=axis.min;
-              for (var i = 0; i<Dists.length-1; ++i) {
-                if (typeof Dists[i] !== 'undefined' && typeof Dists[i+1] !== 'undefined') {
-                  if (Math.floor(Dists[i+1]*MARKERS_PER_MILE) > Math.floor(Dists[i]*MARKERS_PER_MILE)) {
-                    // d0=25.65  v0=89
-                    // d1=25.71  v1=90  dt = 25.70  dt-d0 / d1-d0
-                    dist0=Dists[i];
-                    dist1=Dists[i+1];
-                    distt=Math.floor(Dists[i+1]*MARKERS_PER_MILE)/MARKERS_PER_MILE
-                    frac = (distt - dist0) / (dist1 - dist0);
-                    var lbl="";
-                    if (i < NVALUES-1) lbl=distt+"";
-                    var tik = {
-                      value: Xaxis[i]+frac,
-                      label: lbl,
-                      color: '#ff0000'
-                    };
-                    //console.log("==tik==");
-                    //console.log(tik);
-                    //console.log("==tik==");
-                    axtics.push(tik);
-                  }
-                } else if (typeof Dists[i] === 'undefined' && typeof Dists[i+1] !== 'undefined') {
-                  //console.log("start me up!");
-                  // beginning mile marker 0
-                  if (true || parseFloat(Dists[i+1]) < 26.0/12/5280) {
-                    var tik= {
-                      value: Xaxis[i+1],
-                      label: "start"
-                    };
-                    axtics.push(tik);
-                  }
-                }
-              }
-                axtics.push({
-                  value: xmax-LOOKAHEAD,
-                  label: '',
-                });
-              axis.ticks = axtics;
-              
-              axis.min=xmin;
-              axis.max=xmax;
-	      if (our_chart && our_chart.data) 
-		    //if (our_chart.data.datasets[0].data[NVALUES].x > xmax-1){ //-LOOKAHEAD) {
-			    our_chart.data.datasets[0].data[NVALUES].x  = Math.floor(xmax+1); // -LOOKAHEAD;
-		    //}
-              //console.log('ticks set');
+        options: {
+          plugins: { legend: { display: false, position: 'right', labels: { font: { size: 15 }, pointStyleWidth: 10, boxHeight: 8, pointStyle: 'circle', usePointStyle: true } } },
+          animation: false,
+          layout: {
+            padding: {
+              left: 45
             }
           },
-          y:{
-            beginAtZero: true, min:0,max:40,
-            position: 'left',
-            afterBuildTicks: (axis) => [0,5,10,15,20,25,30,35,40].map(v => ({value:v})),
-            grid: {color:'blue', lineWidth:2},
-            ticks: { 
-              callback: (x) => { return x+' mph'},
-              font: {size: 15 }
+          scales: {
+            x: {
+              //bounds: 'data',
+              grid: {
+                color: '#000000',
+                lineWidth: 2
+              },
+              //ticks: {
+              //  font: {size:15},
+              //  callback: (x) => { return x+' mph'}
+              //},
+              afterTickToLabelConversion: (axis) => {
+                var axtics = [];
+                var xmax = axis.max;
+                var xmin = axis.min;
+                for (var i = 0; i < Dists.length - 1; ++i) {
+                  if (typeof Dists[i] !== 'undefined' && typeof Dists[i + 1] !== 'undefined') {
+                    if (Math.floor(Dists[i + 1] * MARKERS_PER_MILE) > Math.floor(Dists[i] * MARKERS_PER_MILE)) {
+                      // d0=25.65  v0=89
+                      // d1=25.71  v1=90  dt = 25.70  dt-d0 / d1-d0
+                      dist0 = Dists[i];
+                      dist1 = Dists[i + 1];
+                      distt = Math.floor(Dists[i + 1] * MARKERS_PER_MILE) / MARKERS_PER_MILE
+                      frac = (distt - dist0) / (dist1 - dist0);
+                      var lbl = "";
+                      if (i < NVALUES - 1) lbl = distt + "";
+                      var tik = {
+                        value: Xaxis[i] + frac,
+                        label: lbl,
+                        color: '#ff0000'
+                      };
+                      //console.log("==tik==");
+                      //console.log(tik);
+                      //console.log("==tik==");
+                      axtics.push(tik);
+                    }
+                  } else if (typeof Dists[i] === 'undefined' && typeof Dists[i + 1] !== 'undefined') {
+                    //console.log("start me up!");
+                    // beginning mile marker 0
+                    if (true || parseFloat(Dists[i + 1]) < 26.0 / 12 / 5280) {
+                      var tik = {
+                        value: Xaxis[i + 1],
+                        label: "start"
+                      };
+                      axtics.push(tik);
+                    }
+                  }
+                }
+                axtics.push({
+                  value: xmax - LOOKAHEAD,
+                  label: '',
+                });
+                axis.ticks = axtics;
+
+                axis.min = xmin;
+                axis.max = xmax;
+                if (our_chart && our_chart.data)
+                  //if (our_chart.data.datasets[0].data[NVALUES].x > xmax-1){ //-LOOKAHEAD) {
+                  our_chart.data.datasets[0].data[NVALUES].x = Math.floor(xmax + 1); // -LOOKAHEAD;
+                //}
+                //console.log('ticks set');
+              }
+            },
+            y: {
+              beginAtZero: true, min: 0, max: 40,
+              position: 'left',
+              afterBuildTicks: (axis) => [0, 5, 10, 15, 20, 25, 30, 35, 40].map(v => ({ value: v })),
+              grid: { color: 'blue', lineWidth: 2 },
+              ticks: {
+                callback: (x) => { return x + ' mph' },
+                font: { size: 15 }
+              }
             }
           }
         }
-      }
-    });
-  }
-//initdata();
-function dothedew(strdata) {
-  if (typeof strdata != 'undefined') {
-    //console.log('incoming data!!');
-    data = JSON.parse(strdata);
-    //console.log(data);
-    if (parseFloat(Dists[NVALUES-1]) != -1 && parseFloat(Dists[NVALUES-1]) > parseFloat(data.distance)) {
-      // ** clearing system **
-      initdata();
-      console.log("*** clearing system ***");
+      });
     }
-    // === SPEED ===
-    Speeds.shift();
-    Speeds.length = NVALUES;
-    if (data.speed !== undefined) {
-      Speeds[NVALUES-1] = data.speed;
-    }
-    // === DISTANCE ===
-    Dists.shift();
-    Dists.length = NVALUES;
-    if (data.distance !== undefined) {
-      Dists[NVALUES-1] = parseFloat(data.distance);
-    }
-    // === LABELS ===
-    Labels.shift();
-    Labels.length = NVALUES;
-    Labels[NVALUES-1] = '';
-    
-    // === Xaxis ===
-    Xaxis.shift()
-    Xaxis.length = NVALUES;
-    Xaxis[NVALUES-1] = Xaxis[NVALUES-2]+1;
-    if (Dists[NVALUES-2] !== undefined && Dists[NVALUES-1] !== undefined) {
-      //console.log("DISTS: "+Dists[NVALUES-1]+" >? "+Dists[NVALUES-2]);
-      if (Math.floor(parseFloat(Dists[NVALUES-1])*MARKERS_PER_MILE) > Math.floor(parseFloat(Dists[NVALUES-2])*MARKERS_PER_MILE)) {
-        //Labels[NVALUES-1] = (Math.floor(parseFloat(Dists[NVALUES-1])*10)/10)+"";
-      } else if (parseFloat(Dists[NVALUES-1]) < parseFloat(Dists[NVALUES-2])) {
-        // re-init system
-        initdata();
-      }
-    }
-    Datapts.shift()
-    Datapts.length = NVALUES+1;
-    Datapts[NVALUES-1] = { x:Xaxis[NVALUES-1], y:Speeds[NVALUES-1], label:Labels[NVALUES-1]};
-    var xm = our_chart.da
-    Datapts[NVALUES] = { x:Xaxis[NVALUES-1]+5, y:Speeds[NVALUES-1], label:Labels[NVALUES-1]};
-    our_chart.data.datasets[0].data = Datapts;
-    our_chart.data.datasets[1].data = Landpts;
-    our_chart.labels = Labels;
-    
-    //our_chart.options.scales.x.min = Xaxis[0];
-    //our_chart.options.scales.x.max = Xaxis[NVALUES-1];
-    //our_chart.update();
-    dpArrived();
-    if (!anim_running) {
-      //console.log("calling animatex...");
-      keep_anim_running = true;
-      setTimeout(animatex,0);
-    }
-  }
-}
+    //initdata();
+    function dothedew(strdata) {
+      if (typeof strdata != 'undefined') {
+        //console.log('incoming data!!');
+        data = JSON.parse(strdata);
+        //console.log(data);
+        if (parseFloat(Dists[NVALUES - 1]) != -1 && parseFloat(Dists[NVALUES - 1]) > parseFloat(data.distance)) {
+          // ** clearing system **
+          initdata();
+          console.log("*** clearing system ***");
+        }
+        // === SPEED ===
+        Speeds.shift();
+        Speeds.length = NVALUES;
+        if (data.speed !== undefined) {
+          Speeds[NVALUES - 1] = data.speed;
+        }
+        // === DISTANCE ===
+        Dists.shift();
+        Dists.length = NVALUES;
+        if (data.distance !== undefined) {
+          Dists[NVALUES - 1] = parseFloat(data.distance);
+        }
+        // === LABELS ===
+        Labels.shift();
+        Labels.length = NVALUES;
+        Labels[NVALUES - 1] = '';
 
-
-function dpArrived() {
-  pprev_dp_time = prev_dp_time;
-  prev_dp_time = Date.now();
-}
-
-function animatex() {
-  if (!keep_anim_running) {
-    anim_running = false;
-    return;
-  }
-
-  anim_running = true;
-  console.log("***TIMES: "+pprev_dp_time+", "+prev_dp_time);
-  if (pprev_dp_time != 0) {
-    //console.log("animatex!!");
-
-    // calculate expected position based on velocity
-    let prev_interval = prev_dp_time - pprev_dp_time;
-    let this_time = Date.now();
-    let this_interval = this_time - prev_dp_time;
-    let this_interval_frac = this_interval / prev_interval;
-    if (this_interval_frac > 3.0)  {
-      K_XMIN_VEL=0;
-    } else{
-      let prev_min = Xaxis[0];
-      let pprev_min = prev_min - 1;
-      let pred_min = prev_min + (prev_min - pprev_min)*this_interval_frac;
-      let prev_vel = (prev_min - pprev_min) / (prev_dp_time - pprev_dp_time);
-      K_XMIN_VEL += (prev_vel - K_XMIN_VEL) * 0.10 + (pred_min - K_XMIN)*0.0055;
-    }
-  }
-  K_XMIN += K_XMIN_VEL;
-  
-
-  chart_range = NVALUES;
-  our_chart.options.scales.x.min = K_XMIN+2;
-  our_chart.options.scales.x.max = K_XMIN+chart_range+LOOKAHEAD;
-  if (our_chart.data.datasets[0].data[NVALUES].x > K_XMIN+chart_range) {
-	    //our_chart.data.datasets[0].data[NVALUES].x  = xmax-LOOKAHEAD;
-	    our_chart.data.datasets[0].data[NVALUES].x = K_XMIN+chart_range;
-  }
-  our_chart.update();
-  if (keep_anim_running) {
-    setTimeout(animatex, 1000/60);
-  } else {
-    anim_running = false;
-  }
-}
-
-
-function playSoundAsync(){
-    tardissound[nextSound].play();
-    nextSound = (nextSound + 1) % NSOUNDS;
-}
-
-
-function bestLink(links, ourheading) {
-  var bestlink = -1;
-  var bestlinkmove = 9999;
-  for (var i = 0; i < links.length; ++i) {
-    let move = links[i].heading - ourheading;
-    while (move >= 180.0) 
-      move -= 360.0;
-    while (move < -180.0)
-      move += 360.0;
-    move = Math.abs(move);
-    console.log("ourHDT="+ourheading+" links["+i+"].heading="+links[i].heading+" move="+move);
-    if (move < bestlinkmove) {
-      bestlinkmove = move;
-      bestlink = i;
-    }
-  }
-  if (bestlink > -1) {
-    return bestlink;
-  } else {
-    return null;
-  }
-}
-
-// check for data 
-let olddata;
-function checkForNewData() {
-  fetch("./latest.json?time="+Date.now())
-    .then((e)=>{
-      e.text()
-        .then((t)=>{
-          if (olddata) {
-            if (olddata != t) {
-              console.log(t);
-              dothedew(t);
-            }
+        // === Xaxis ===
+        Xaxis.shift()
+        Xaxis.length = NVALUES;
+        Xaxis[NVALUES - 1] = Xaxis[NVALUES - 2] + 1;
+        if (Dists[NVALUES - 2] !== undefined && Dists[NVALUES - 1] !== undefined) {
+          //console.log("DISTS: "+Dists[NVALUES-1]+" >? "+Dists[NVALUES-2]);
+          if (Math.floor(parseFloat(Dists[NVALUES - 1]) * MARKERS_PER_MILE) > Math.floor(parseFloat(Dists[NVALUES - 2]) * MARKERS_PER_MILE)) {
+            //Labels[NVALUES-1] = (Math.floor(parseFloat(Dists[NVALUES-1])*10)/10)+"";
+          } else if (parseFloat(Dists[NVALUES - 1]) < parseFloat(Dists[NVALUES - 2])) {
+            // re-init system
+            initdata();
           }
-          olddata = t;
-          window.setTimeout(checkForNewData,300);
-        });
-    });
-}
+        }
+        Datapts.shift()
+        Datapts.length = NVALUES + 1;
+        Datapts[NVALUES - 1] = { x: Xaxis[NVALUES - 1], y: Speeds[NVALUES - 1], label: Labels[NVALUES - 1] };
+        var xm = our_chart.da
+        Datapts[NVALUES] = { x: Xaxis[NVALUES - 1] + 5, y: Speeds[NVALUES - 1], label: Labels[NVALUES - 1] };
+        our_chart.data.datasets[0].data = Datapts;
+        our_chart.data.datasets[1].data = Landpts;
+        our_chart.labels = Labels;
 
-
-
-
-function protoinit() {
-	window.setTimeout(()=>{
-		initialize();
-		checkForNewData();
-	},1000);
-}
-window.addEventListener("load", protoinit, false);
-
-
-
-
-// ************* WEBSOCKET CODE *************
-/*
-let socket;// = new WebSocket("ws://"+location.host+"/wsck");
-function openWebSocket() {
-  socket = new WebSocket("ws://"+location.host+"/wsck");
-
-  socket.onopen = function(e) {
-      console.log("[open] Connection established");
-      console.log("Sending to server");
-      socket.send("reqdata");
-  };
-
-  socket.onmessage = function(event) {
-      console.log(`[message] Data received from server: ${event.data}`);
-      dothedew(event.data);
-  };
-
-  socket.onclose = function(event) {
-      if (event.wasClean) {
-          console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
-      } else {
-          console.log('[close] Connection died');
-          window.setTimeout(openWebSocket,250);
+        //our_chart.options.scales.x.min = Xaxis[0];
+        //our_chart.options.scales.x.max = Xaxis[NVALUES-1];
+        //our_chart.update();
+        dpArrived();
+        if (!anim_running) {
+          //console.log("calling animatex...");
+          keep_anim_running = true;
+          setTimeout(animatex, 0);
+        }
       }
-  };
+    }
 
-  socket.onerror = function(error) {
-      console.log("[error]");
-  };
 
-}
+    function dpArrived() {
+      pprev_dp_time = prev_dp_time;
+      prev_dp_time = Date.now();
+    }
 
-openWebSocket();
-*/
-var tapped = function(e){
-  //e.preventDefault();
-  for (let i = 0; i < NSOUNDS; ++i) {
-    tardissound[i] = new Audio("dematbrief.wav");
-    tardissound[i].play();
-    tardissound[i].pause();
-  }
-};
-document.body.addEventListener('touchstart', tapped, false);
-document.body.addEventListener('mousedown', tapped, false);
-document.body.addEventListener('click', tapped, false);
+    function animatex() {
+      if (!keep_anim_running) {
+        anim_running = false;
+        return;
+      }
 
-</script>
+      anim_running = true;
+      console.log("***TIMES: " + pprev_dp_time + ", " + prev_dp_time);
+      if (pprev_dp_time != 0) {
+        //console.log("animatex!!");
+
+        // calculate expected position based on velocity
+        let prev_interval = prev_dp_time - pprev_dp_time;
+        let this_time = Date.now();
+        let this_interval = this_time - prev_dp_time;
+        let this_interval_frac = this_interval / prev_interval;
+        if (this_interval_frac > 3.0) {
+          K_XMIN_VEL = 0;
+        } else {
+          let prev_min = Xaxis[0];
+          let pprev_min = prev_min - 1;
+          let pred_min = prev_min + (prev_min - pprev_min) * this_interval_frac;
+          let prev_vel = (prev_min - pprev_min) / (prev_dp_time - pprev_dp_time);
+          K_XMIN_VEL += (prev_vel - K_XMIN_VEL) * 0.10 + (pred_min - K_XMIN) * 0.0055;
+        }
+      }
+      K_XMIN += K_XMIN_VEL;
+
+
+      chart_range = NVALUES;
+      our_chart.options.scales.x.min = K_XMIN + 2;
+      our_chart.options.scales.x.max = K_XMIN + chart_range + LOOKAHEAD;
+      if (our_chart.data.datasets[0].data[NVALUES].x > K_XMIN + chart_range) {
+        //our_chart.data.datasets[0].data[NVALUES].x  = xmax-LOOKAHEAD;
+        our_chart.data.datasets[0].data[NVALUES].x = K_XMIN + chart_range;
+      }
+      our_chart.update();
+      if (keep_anim_running) {
+        setTimeout(animatex, 1000 / 60);
+      } else {
+        anim_running = false;
+      }
+    }
+
+
+    function playSoundAsync() {
+      tardissound[nextSound].play();
+      nextSound = (nextSound + 1) % NSOUNDS;
+    }
+
+
+    function bestLink(links, ourheading) {
+      var bestlink = -1;
+      var bestlinkmove = 9999;
+      for (var i = 0; i < links.length; ++i) {
+        let move = links[i].heading - ourheading;
+        while (move >= 180.0)
+          move -= 360.0;
+        while (move < -180.0)
+          move += 360.0;
+        move = Math.abs(move);
+        console.log("ourHDT=" + ourheading + " links[" + i + "].heading=" + links[i].heading + " move=" + move);
+        if (move < bestlinkmove) {
+          bestlinkmove = move;
+          bestlink = i;
+        }
+      }
+      if (bestlink > -1) {
+        return bestlink;
+      } else {
+        return null;
+      }
+    }
+
+    // check for data 
+    let olddata;
+    function checkForNewData() {
+      fetch("./latest.json?time=" + Date.now())
+        .then((e) => {
+          e.text()
+            .then((t) => {
+              if (olddata) {
+                if (olddata != t) {
+                  console.log(t);
+                  dothedew(t);
+                }
+              }
+              olddata = t;
+              window.setTimeout(checkForNewData, 300);
+            });
+        });
+    }
+
+
+
+
+    function protoinit() {
+      window.setTimeout(() => {
+        initialize();
+        checkForNewData();
+      }, 1000);
+    }
+    window.addEventListener("load", protoinit, false);
+
+
+
+
+    // ************* WEBSOCKET CODE *************
+    /*
+    let socket;// = new WebSocket("ws://"+location.host+"/wsck");
+    function openWebSocket() {
+      socket = new WebSocket("ws://"+location.host+"/wsck");
+    
+      socket.onopen = function(e) {
+          console.log("[open] Connection established");
+          console.log("Sending to server");
+          socket.send("reqdata");
+      };
+    
+      socket.onmessage = function(event) {
+          console.log(`[message] Data received from server: ${event.data}`);
+          dothedew(event.data);
+      };
+    
+      socket.onclose = function(event) {
+          if (event.wasClean) {
+              console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+          } else {
+              console.log('[close] Connection died');
+              window.setTimeout(openWebSocket,250);
+          }
+      };
+    
+      socket.onerror = function(error) {
+          console.log("[error]");
+      };
+    
+    }
+    
+    openWebSocket();
+    */
+    var tapped = function (e) {
+      //e.preventDefault();
+      for (let i = 0; i < NSOUNDS; ++i) {
+        tardissound[i] = new Audio("dematbrief.wav");
+        tardissound[i].play();
+        tardissound[i].pause();
+      }
+    };
+    document.body.addEventListener('touchstart', tapped, false);
+    document.body.addEventListener('mousedown', tapped, false);
+    document.body.addEventListener('click', tapped, false);
+
+  </script>
 </body>
-</html>
 
+</html>
