@@ -70,3 +70,34 @@ web application, including timing-related issues, on actual data that I collecte
 forced to create my own data for testing.  No getting around the workout! </del>  Ah, more foolish idealism wasted on my salad days. I now not only go back and cherry pick a day where I actually cycled for more than 10 minutes without dying of boredom, I now put it in a loop so the same <del>5 minutes</del>[uh of course I meant 10 minutes.. um...]  get replayed over and over while I am sitting in my comfy chair far from the excercise bike writing and debugging this code.
 
 And now the moment you have been waiting for...
+
+<br>
+
+<br>
+
+<br>
+
+
+# The Flappy Bird client
+
+It is basically a recreation of the classic Flappy Bird game, more recently becoming well-known as an environment to train Reinforcement Learning AI models. Basically you fly a bird from left to right on your screen -- really the bird is confined to moving up and down on a vertical line and the scenery moves from right to left past the bird -- and you need to fly the bird through gaps in tree trunks or walls by moving up or down to meet the gaps as they approach.  Move too slowly (or too fast!) and your bird strkes the tree or wall and you die.
+
+Here are how my web client differs from the game:
+
+1. Instead of walls/tree trunks with gaps in them, you are flying over a landscape of rolling hills of random height and space between them.  I just summed a couple of sin waves, multiplied by a third sin wave, and then scaled the thing to cover a reasonable range. At each relative minimum and maximum of the rolling hills, a gate is drawn.  Your flappy bird must fly through the gate, or, actually nothing happens yet, it just flies right through the gate's frame, or right through the hill or whatever. Your bird never dies.
+
+2. In order to fly the bird up or down, you "simply" speed up or slow down your pedaling speed. This is not really "simple" but in fact is much harder than it sounds -- unless you've tried this yourself, in which case it is exactly as hard as it sounds.  This is because much more than brute strength is need, especially for the gates that require low speeds be maintained.
+  
+4. Another problem is that when a hill is very tall and peaks above 30 mph or so, the poor python script, running interpreted on the not so speedy RPi 2, just can't keep up with recording all the wheel rotations as you approach the summit. The queue of wheel rotations to be recorded fills up, and at some point the program has to give up and flush the queue.  This results in the poor bird going into free fall, going right through the hill and usually finally catching a wave of rotations at about 5 mph. It looks like I'm going to have to bite the bullet and write an efficient interrupt handler in C/C++, and then tighten up the Python code to know when to hold 'em and know when to fold 'em wheh it comes to handling the wheel rotation events in a more intelligent manner.  It's trying to do that now, but it just doesn't work well enough.
+
+
+== What's next for the ol' Flappy Bird?
+
+Well, I has a blast today and cycled for over 6.4 miles while playing Cycling Flappy Bird.  [new name anyone?  Bikey Bird? Peddlin' Polly wanna bike?
+
+I'm thinking that some sort of logarithmic scale for the speed (y-axis) dimension might make this a little more enjoyable.  As it is, at low speeds of below 15 mph, it is very tedious to keep it at within a 5mph window to make it through the gates at that level. For the higher speeds, it feels like going from 25 to 30 feels like the effort doubles, while going from 10 to 20 mph is nothing, even though 10 to 20 is a full doubling or a 100% increase, while going 25 to 30 is only a 20% increase.
+
+# summary
+Even with its limitations (imaginary scoring, instability at higher speeds, etc.) this game is still a lot of fun. I had a blast writing it, and now I'm having a blast using it and putting in new features as I think of them.
+
+It's all good. But now I have to stop cycling and go to bed because I have this thing called a job I have to go to. Oh well.
